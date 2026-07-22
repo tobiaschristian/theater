@@ -103,6 +103,9 @@ function theater_custom_alter_user_register_form(array &$form, FormStateInterfac
  * Alters the user login form.
  */
 function theater_custom_alter_user_login_form(array &$form, FormStateInterface $form_state): void {
+  $form['#prefix'] = '<div class="small-form"><h1>Jetzt anmelden!</h1>';
+  $form['#suffix'] = '</div>';
+
   if (isset($form['name'])) {
     $form['name']['#title'] = t('E-Mail');
     $form['name']['#title_display'] = FALSE;
