@@ -1,0 +1,3 @@
+administer theater_tickets:
+  title: 'Ticketing verwalten (Säle, Plätze, Kauflimits, fremde Reservierungen freigeben)'
+  restrict access: true

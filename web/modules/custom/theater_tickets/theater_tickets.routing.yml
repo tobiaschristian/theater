@@ -1,0 +1,24 @@
+theater_tickets.seat_picker:
+  path: '/vorstellung/{node}/plaetze'
+  defaults:
+    _form: '\Drupal\theater_tickets\Form\SeatPickerForm'
+    _title: 'Plätze auswählen'
+  requirements:
+    _permission: 'access content'
+    node: '\d+'
+  options:
+    parameters:
+      node:
+        type: entity:node
+
+theater_tickets.saal_generate_seats:
+  path: '/admin/theater-tickets/saal/{saal}/generate-seats'
+  defaults:
+    _form: '\Drupal\theater_tickets\Form\SaalGenerateSeatsForm'
+    _title: 'Plätze generieren'
+  requirements:
+    _permission: 'administer theater_tickets'
+  options:
+    parameters:
+      saal:
+        type: entity:saal

@@ -1,0 +1,10 @@
+name: Theater Tickets
+type: module
+description: 'Serverseitige Sitzplatzreservierung und Kauflimits für Vorstellungen.'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:node
+  - drupal:taxonomy
+  - drupal:user
+  - drupal:datetime

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_datum
+    - node.type.vorstellung
+  module:
+    - datetime
+id: node.vorstellung.field_datum
+field_name: field_datum
+entity_type: node
+bundle: vorstellung
+label: Termin
+description: 'Datum und Uhrzeit der Vorstellung.'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: datetime

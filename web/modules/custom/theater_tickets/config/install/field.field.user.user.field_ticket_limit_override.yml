@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.user.field_ticket_limit_override
+  module:
+    - user
+id: user.user.field_ticket_limit_override
+field_name: field_ticket_limit_override
+entity_type: user
+bundle: user
+label: 'Kauflimit-Override'
+description: 'Individuelle Ausnahme für die maximale Anzahl Plätze (überschreibt nur die Zahl, nicht den Zählmodus der Rollen-Stufe). Leer lassen für Standard-Limit der Rolle.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

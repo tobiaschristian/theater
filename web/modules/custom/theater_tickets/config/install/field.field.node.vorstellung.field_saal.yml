@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_saal
+    - node.type.vorstellung
+  module:
+    - theater_tickets
+id: node.vorstellung.field_saal
+field_name: field_saal
+entity_type: node
+bundle: vorstellung
+label: Saal
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: default
+  handler_settings: {  }
+field_type: entity_reference

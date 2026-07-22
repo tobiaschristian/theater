@@ -1,0 +1,8 @@
+langcode: en
+status: true
+dependencies: {  }
+name: Saison
+vid: saison
+description: 'Theatersaisons, z. B. "Saison 2026" – gruppiert Vorstellungen für Saison-Kauflimits.'
+weight: 0
+new_revision: false

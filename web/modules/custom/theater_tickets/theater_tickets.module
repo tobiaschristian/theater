@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_cron().
+ *
+ * Räumt abgelaufene Sitzplatzreservierungen auf. Die Gültigkeit einer
+ * Reservierung wird davon unabhängig immer live gegen die aktuelle Zeit
+ * geprüft (siehe SeatHoldManager::isHeld()) – dieser Cron-Lauf hält die
+ * Tabelle nur klein.
+ */
+function theater_tickets_cron(): void {
+  $deleted = \Drupal::service('theater_tickets.seat_hold_manager')->garbageCollectExpiredHolds();
+
+  if ($deleted > 0) {
+    \Drupal::logger('theater_tickets')->info('@count abgelaufene Sitzplatzreservierungen aufgeräumt.', [
+      '@count' => $deleted,
+    ]);
+  }
+}

@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_schema().
+ */
+function theater_tickets_schema(): array {
+  $schema['theater_seat_hold'] = [
+    'description' => 'Temporäre Sitzplatzreservierungen (5 Minuten) vor dem endgültigen Kauf.',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primärschlüssel.',
+      ],
+      'seat_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Entity-ID des referenzierten theater_platz.',
+      ],
+      'performance_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Node-ID der referenzierten Vorstellung.',
+      ],
+      'uid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'User-ID, der den Platz hält.',
+      ],
+      'created' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Unix-Zeitstempel der Reservierung.',
+      ],
+      'expires' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Unix-Zeitstempel, ab dem die Reservierung abläuft.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'unique keys' => [
+      'seat_performance' => ['seat_id', 'performance_id'],
+    ],
+    'indexes' => [
+      'uid' => ['uid'],
+      'performance_id' => ['performance_id'],
+      'expires' => ['expires'],
+    ],
+  ];
+
+  return $schema;
+}

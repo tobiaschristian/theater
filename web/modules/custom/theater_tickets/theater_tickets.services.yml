@@ -1,0 +1,26 @@
+services:
+  logger.channel.theater_tickets:
+    parent: logger.channel_base
+    arguments: ['theater_tickets']
+
+  theater_tickets.ticket_quota:
+    class: Drupal\theater_tickets\TicketQuotaService
+    arguments: ['@database', '@entity_type.manager', '@datetime.time']
+
+  Drupal\theater_tickets\TicketQuotaServiceInterface: '@theater_tickets.ticket_quota'
+
+  theater_tickets.seat_hold_manager:
+    class: Drupal\theater_tickets\SeatHoldManager
+    arguments: ['@database', '@datetime.time', '@theater_tickets.ticket_quota', '@logger.channel.theater_tickets']
+
+  Drupal\theater_tickets\SeatHoldManagerInterface: '@theater_tickets.seat_hold_manager'
+
+  theater_tickets.purchase:
+    class: Drupal\theater_tickets\PurchaseService
+    arguments: ['@database', '@datetime.time', '@entity_type.manager', '@logger.channel.theater_tickets']
+
+  Drupal\theater_tickets\PurchaseServiceInterface: '@theater_tickets.purchase'
+
+  theater_tickets.platz_generator:
+    class: Drupal\theater_tickets\PlatzGeneratorService
+    arguments: ['@entity_type.manager']

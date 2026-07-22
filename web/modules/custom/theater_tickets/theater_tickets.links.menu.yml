@@ -1,0 +1,11 @@
+entity.saal.collection:
+  title: 'Säle'
+  description: 'Theatersäle verwalten.'
+  route_name: entity.saal.collection
+  parent: system.admin_structure
+
+entity.theater_ticket_limit_tier.collection:
+  title: 'Kauflimit-Stufen'
+  description: 'Kauflimits pro Rolle/Saison verwalten.'
+  route_name: entity.theater_ticket_limit_tier.collection
+  parent: system.admin_structure
