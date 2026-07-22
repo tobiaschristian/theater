@@ -1,0 +1,5 @@
+name: Theater Custom
+type: module
+description: 'Custom form alterations for theater member flows.'
+package: Custom
+core_version_requirement: ^10 || ^11

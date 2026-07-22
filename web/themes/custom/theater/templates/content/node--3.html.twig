@@ -1,0 +1,46 @@
+{#
+/**
+ * @file
+ * Theme override for page nodes.
+ */
+#}
+<article{{ attributes.addClass('theater-page-node') }}>
+  <section class="section">
+    <div class="center">
+      <h1 class="hdl">Unser Ensemble</h1>
+      <div class="content-wrapper short-content">
+        <p>Unser Ensemble ist das Herzstück unseres Vereins. Mit Humor, Engagement und viel Freude am Theater bringen unsere Schauspielerinnen und Schauspieler Jahr für Jahr tolle Stücke auf die Bühne. Hier stellen wir Ihnen die Gesichter hinter den Rollen vor.</p>
+      </div>
+      <div class="team-wrapper">
+        <div class="team-member">
+          <img src="https://picsum.photos/400/500?grayscale"/>
+          <h3>Volker Seelmann</h3>
+        </div>
+        
+        <div class="team-member">
+          <img src="https://picsum.photos/400/500?grayscale"/>
+          <h3>Julia Grill</h3>
+        </div>
+        
+        <div class="team-member">
+          <img src="https://picsum.photos/400/500?grayscale"/>
+          <h3>Tobias Christian</h3>
+        </div>
+        
+        <div class="team-member">
+          <img src="https://picsum.photos/400/500?grayscale"/>
+          <h3>Gerlinde Rattelsdörfer</h3>
+        </div>
+        
+        <div class="team-member">
+          <img src="https://picsum.photos/400/500?grayscale"/>
+          <h3>Bree Ross</h3>
+        </div>
+      </div>
+      
+      <div{{ content_attributes.addClass('theater-page-node__content') }}>
+        {{ content }}
+      </div>
+    </div>
+  </section>
+</article>

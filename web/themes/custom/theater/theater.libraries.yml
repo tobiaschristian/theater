@@ -1,0 +1,13 @@
+global:
+  css:
+    theme:
+      css/style.css: {}
+      css/menu.css: {}
+      css/type.css: {}
+      css/elements.css: {}
+  js:
+    js/menu.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/once

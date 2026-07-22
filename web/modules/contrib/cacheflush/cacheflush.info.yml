@@ -1,0 +1,13 @@
+name: CacheFlush
+type: module
+description: 'Allows you to create configurable cache flusher presets.'
+core_version_requirement: ^8 || ^9 || ^10 || ^11
+configure: cacheflush.presets
+package: Cacheflush
+dependencies:
+  - cacheflush:cacheflush_entity
+
+# Information added by Drupal.org packaging script on 2025-09-20
+version: '2.0.3'
+project: 'cacheflush'
+datestamp: 1758403028

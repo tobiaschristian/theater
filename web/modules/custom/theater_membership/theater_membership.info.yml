@@ -1,0 +1,7 @@
+name: Theater Membership
+type: module
+description: 'Manages membership type, IBAN storage, and SEPA mandate generation for members.'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:user

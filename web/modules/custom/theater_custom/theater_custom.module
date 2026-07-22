@@ -1,0 +1,146 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element\PasswordConfirm;
+
+/**
+ * Implements hook_form_alter().
+ */
+function theater_custom_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $supported_forms = [
+    'user_register_form',
+    'user_login_form',
+    'user_pass',
+  ];
+
+  if (!in_array($form_id, $supported_forms, TRUE)) {
+    return;
+  }
+
+  theater_custom_apply_shared_form_alter($form, $form_state, $form_id);
+
+  switch ($form_id) {
+    case 'user_register_form':
+      theater_custom_alter_user_register_form($form, $form_state);
+      break;
+
+    case 'user_login_form':
+      theater_custom_alter_user_login_form($form, $form_state);
+      break;
+
+    case 'user_pass':
+      theater_custom_alter_user_pass_form($form, $form_state);
+      break;
+  }
+}
+
+/**
+ * Applies shared changes across all supported forms.
+ */
+function theater_custom_apply_shared_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $form['#attributes']['class'][] = 'theater-custom-form';
+  $form['#attributes']['class'][] = 'theater-custom-form--' . strtr($form_id, '_', '-');
+}
+
+/**
+ * Alters the user registration form.
+ */
+function theater_custom_alter_user_register_form(array &$form, FormStateInterface $form_state): void {
+  $form['#prefix'] = '<div class="small-form"><h1>Jetzt Mitglied werden</h1>';
+  $form['#suffix'] = '</div>';
+  if (isset($form['account']['mail'])) {
+    $form['account']['mail']['#title'] = t('E-Mail');
+    unset($form['account']['mail']['#description']);
+    $form['account']['mail']['#title_display'] = FALSE;
+    $form['account']['mail']['#placeholder'] = 'E-Mail Adresse eingeben';
+  }
+  
+  $form['field_vorname']['widget'][0]['value']['#attributes']['placeholder'] = 'Vorname';
+  $form['field_nachname']['widget'][0]['value']['#attributes']['placeholder'] = 'Nachname';
+  $form['field_adresse']['widget'][0]['value']['#attributes']['placeholder'] = 'Straße, Hausnummer';
+  $form['field_plz']['widget'][0]['value']['#attributes']['placeholder'] = 'PLZ';
+  $form['field_ort']['widget'][0]['value']['#attributes']['placeholder'] = 'Ort';
+  $form['field_inhaber']['widget'][0]['value']['#attributes']['placeholder'] = 'Kontoinhaber';
+  $form['field_vorname']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_nachname']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_inhaber']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_ort']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_adresse']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_plz']['widget'][0]['value']['#title_display'] = FALSE;
+  
+  $form['actions']['submit']['#value'] = 'Jetzt Mitglied werden';
+
+  if (isset($form['account']['pass'])) {
+    unset($form['account']['pass']['#description']);
+    $form['account']['pass']['#process'][] = 'theater_custom_process_register_password';
+  }
+
+  $form['privacy_consent'] = [
+    '#type' => 'checkbox',
+    '#title' => new FormattableMarkup('<a href=":url" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> gelesen und akzeptiert.', [
+      ':url' => '/datenschutz',
+    ]),
+    '#title_display' => 'after',
+    '#required' => TRUE,
+    '#weight' => 98,
+  ];
+
+  $form['statute_consent'] = [
+    '#type' => 'checkbox',
+    '#title' => new FormattableMarkup('<a href=":url" target="_blank" rel="noopener noreferrer">Vereinssatzung</a> gelesen und akzeptiert.', [
+      ':url' => '/satzung',
+    ]),
+    '#title_display' => 'after',
+    '#required' => TRUE,
+    '#weight' => 99,
+  ];
+}
+
+/**
+ * Alters the user login form.
+ */
+function theater_custom_alter_user_login_form(array &$form, FormStateInterface $form_state): void {
+  if (isset($form['name'])) {
+    $form['name']['#title'] = t('E-Mail');
+    $form['name']['#title_display'] = FALSE;
+    $form['name']['#placeholder'] = 'E-Mail Adresse';
+  }
+
+  if (isset($form['pass'])) {
+    $form['pass']['#title'] = t('Passwort');
+    $form['pass']['#title_display'] = FALSE;
+  }
+
+  if (isset($form['actions']['submit'])) {
+    $form['actions']['submit']['#value'] = t('Anmelden');
+  }
+}
+
+/**
+ * Alters the password reset request form.
+ */
+function theater_custom_alter_user_pass_form(array &$form, FormStateInterface $form_state): void {
+  if (isset($form['name'])) {
+    $form['name']['#title'] = t('E-Mail');
+    $form['name']['#placeholder'] = t('name@example.org');
+  }
+
+  if (isset($form['actions']['submit'])) {
+    $form['actions']['submit']['#value'] = t('Neues Passwort anfordern');
+  }
+}
+
+/**
+ * Adds placeholders to the processed registration password element.
+ */
+function theater_custom_process_register_password(&$element, FormStateInterface $form_state, &$complete_form) {
+  $element = PasswordConfirm::processPasswordConfirm($element, $form_state, $complete_form);
+  $element['pass1']['#placeholder'] = 'Passwort erstellen';
+  $element['pass2']['#placeholder'] = 'Passwort wiederholen';
+  $element['pass1']['#title_display'] = FALSE;
+  $element['pass2']['#title_display'] = FALSE;
+  return $element;
+}

@@ -1,0 +1,14 @@
+name: Theater
+type: theme
+description: 'Custom theater theme with an editorial landing-page layout.'
+package: Custom
+core_version_requirement: ^10 || ^11
+base theme: false
+
+libraries:
+  - theater/global
+
+regions:
+  header: Header
+  content: Content
+  footer: Footer

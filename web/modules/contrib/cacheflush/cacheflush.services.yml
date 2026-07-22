@@ -1,0 +1,4 @@
+services:
+  cacheflush.api:
+    class: 'Drupal\cacheflush\Controller\CacheflushApi'
+    arguments: ['@service_container', '@messenger', '@extension.list.module']

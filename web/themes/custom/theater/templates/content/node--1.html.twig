@@ -1,0 +1,32 @@
+{#
+/**
+ * @file
+ * Theme override for page nodes.
+ */
+#}
+<article{{ attributes.addClass('theater-page-node') }}>
+  <section class="section">
+    <div class="">
+      <h1 class="hdl">Herzlich Willkommen!</h1>
+      <div class="content-wrapper">
+        <p>Schön, dass Sie den Weg zu uns gefunden haben. Auf unserer Internetseite erhalten Sie Einblicke in unser Vereinsleben, aktuelle Aufführungen, Veranstaltungen und alles Wissenswerte rund um unsere Theaterarbeit. Mit viel Leidenschaft, Gemeinschaft und Freude am Spiel bringen wir Jahr für Jahr Kultur auf die Bühne und bereichern so das gesellschaftliche Leben in und um Zapfendorf.</p>
+        
+        <p>Wir wünschen Ihnen viel Freude beim Entdecken unserer Seite und freuen uns darauf, Sie vielleicht schon bald bei einer unserer Aufführungen persönlich begrüßen zu dürfen.</p>
+        
+        <h2>Bauerntheater ist unsere Leidenschaft</h2>
+        
+       <p> Bauerntheater gehört für uns einfach dazu. Mit viel Freude, Humor und Liebe zur fränkischen Tradition bringen wir Jahr für Jahr unterhaltsame Stücke auf die Bühne, die vor allem eines sollen: unserem Publikum einen richtig schönen und lustigen Abend bereiten.</p>
+        
+        <p>Das fränkische Bauerntheater steht für bodenständige Geschichten, witzige Szenen und Charaktere, wie man sie kennt und sofort ins Herz schließt. Gerade dieser besondere Mix aus Alltag, fränkischem Charme und einer guten Portion Situationskomik macht für uns den Reiz aus.</p>
+        
+        <p>Als Verein pflegen wir diese Theaterform mit großer Begeisterung und halten damit ein Stück fränkischer Kultur lebendig. Dabei stehen für uns nicht große Effekte im Vordergrund, sondern gute Unterhaltung, gemeinsamer Spaß und viele Lacher im Saal.</p>
+        
+        <div class="actions"><a href="#" class="button">Sitzplan anzeigen</a> <a href="#" class="button">Tickets</a></div>
+      </div>
+      
+      <div{{ content_attributes.addClass('theater-page-node__content') }}>
+        {{ content }}
+      </div>
+    </div>
+  </section>
+</article>

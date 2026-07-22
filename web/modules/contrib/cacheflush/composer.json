@@ -1,0 +1,12 @@
+{
+    "name": "drupal/cacheflush",
+    "type": "drupal-module",
+    "description": "Allows you to create configurable cache flusher presets.",
+    "homepage": "http://drupal.org/project/cacheflush",
+    "license": "GPL-2.0+",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/cacheflush",
+        "source": "http://cgit.drupalcode.org/cacheflush"
+    }
+}

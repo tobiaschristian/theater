@@ -1,0 +1,6 @@
+services:
+  cacheflush_drush.commands:
+    class: Drupal\cacheflush_drush\Commands\CacheflushDrushCommands
+    arguments: ['@logger.factory']
+    tags:
+      - { name: drush.command }

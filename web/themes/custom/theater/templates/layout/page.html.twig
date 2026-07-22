@@ -1,0 +1,55 @@
+<div class="page-shell">
+  <header class="site-header">
+    <div class="brand-block">
+      <a href="{{ path('<front>') }}" class="brand-link" rel="home">
+        <span class="brand-kicker">Theater- & Kulturverein</span>
+        <span class="brand-title">Zapfendorf e.V.</span>
+      </a>
+    </div>
+    <div class="menu-wrapper">
+      <a href="/user" class="user-login">Login</a>
+      <div class="menu-btn">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </div>
+
+    {% if page.header %}
+      <div class="header-region">
+        {{ page.header }}
+      </div>
+    {% endif %}
+  </header>
+  
+  <div class="header__nav">
+    <nav class="nav">
+      <ul class="nav__list">
+        <li class="nav__list_item"><a class="nav__link" href="#">Menu 1</a></li>
+        <li class="nav__list_item"><a class="nav__link" href="#">Menu 2</a></li>
+        <li class="nav__list_item"><a class="nav__link" href="#">Menu 3</a></li>
+        <li class="nav__list_item"><a class="nav__link" href="#">Menu 4</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <aside class="season-block" aria-label="{{ 'Season information'|t }}">
+    <span>Kommende Saison: Oktober - November 26</span>
+  </aside>
+
+  <main class="main-stage" role="main">
+    <a id="main-content" tabindex="-1"></a>
+    <div class="content-stage">
+      {{ page.content }}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    
+    {% if page.footer %}
+      <div class="footer-region">
+        {{ page.footer }}
+      </div>
+    {% endif %}
+  </footer>
+</div>

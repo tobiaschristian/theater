@@ -1,0 +1,13 @@
+name: CacheFlush Cron
+description: 'Add support to run presets with cron job.'
+core_version_requirement: ^8 || ^9 || ^10 || ^11
+package: cacheflush
+dependencies:
+  - cacheflush:cacheflush_ui
+  - ultimate_cron:ultimate_cron
+type: module
+
+# Information added by Drupal.org packaging script on 2025-09-20
+version: '2.0.3'
+project: 'cacheflush'
+datestamp: 1758403028

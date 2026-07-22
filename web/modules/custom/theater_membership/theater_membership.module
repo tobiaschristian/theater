@@ -1,0 +1,410 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_form.
+ */
+function theater_membership_form_user_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $account = $form_object->getEntity();
+  if (!$account instanceof UserInterface || $account->isAnonymous()) {
+    return;
+  }
+
+  if (!theater_membership_user_can_manage_membership(\Drupal::currentUser(), $account)) {
+    return;
+  }
+
+  $membership = theater_membership_load_membership((int) $account->id());
+  $membership_type = $membership['membership_type'] ?? theater_membership_get_current_membership_type($account);
+  $iban = theater_membership_get_user_field_value($account, 'field_iban');
+  $mandate_reference = theater_membership_get_user_field_value($account, 'field_mandate_reference');
+
+  $form['theater_membership'] = [
+    '#type' => 'container',
+    '#title' => 'Mitgliedschaft',
+    '#weight' => -10,
+  ];
+
+  $form['theater_membership']['theater_membership_type'] = [
+    '#type' => 'radios',
+    '#title' => 'Mitgliedschaftsart',
+    '#title_display' => 'invisible',
+    '#options' => [
+      'mitglied' => 'Mitglied',
+      'foerdermitglied' => 'Fördermitglied',
+    ],
+    '#default_value' => $membership_type,
+    '#required' => TRUE,
+    '#limit_validation_errors' => [],
+    '#ajax' => [
+      'callback' => 'theater_membership_iban_ajax_callback',
+      'event' => 'change',
+      'wrapper' => 'theater-membership-iban-feedback',
+    ],
+  ];
+
+  $form['theater_membership_container'] = [
+    '#type' => 'container',
+    '#weight' => 90,
+    '#attributes' => [
+      'class' => ['theater-membership-container'],
+    ],
+  ];
+
+  $form['theater_membership_container']['theater_membership_iban'] = [
+    '#type' => 'textfield',
+    '#title' => 'IBAN',
+    '#title_display' => 'invisible',
+    '#attributes' => [
+      'placeholder' => 'IBAN',
+    ],
+    '#default_value' => $iban,
+    '#maxlength' => 34,
+    '#weight' => 80,
+    '#size' => 34,
+    '#limit_validation_errors' => [],
+    '#states' => [
+      'visible' => [
+        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+      ],
+      'required' => [
+        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+      ],
+    ],
+    '#ajax' => [
+      'callback' => 'theater_membership_iban_ajax_callback',
+      'event' => 'blur',
+      'wrapper' => 'theater-membership-iban-feedback',
+    ],
+  ];
+
+  $form['theater_membership_container']['theater_membership_iban_feedback'] = [
+    '#type' => 'container',
+    '#attributes' => [
+      'id' => 'theater-membership-iban-feedback',
+      'class' => ['theater-membership-iban-feedback'],
+    ],
+    'message' => [
+      '#markup' => theater_membership_build_iban_feedback_markup($membership_type, $iban),
+    ],
+  ];
+
+  if ($membership_type === 'foerdermitglied' && $mandate_reference !== '') {
+    $form['theater_membership']['theater_membership_mandate_reference'] = [
+      '#type' => 'item',
+      '#title' => t('Mandatsreferenz'),
+      '#markup' => $mandate_reference,
+    ];
+  }
+
+  foreach (['field_geburtsdatum', 'field_adresse', 'field_ort', 'field_plz', 'field_inhaber'] as $field_name) {
+    if (!isset($form[$field_name])) {
+      continue;
+    }
+
+    $form[$field_name]['#states'] = [
+      'visible' => [
+        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+      ],
+      'required' => [
+        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+      ],
+    ];
+  }
+
+  foreach (['field_geburtsdatum', 'field_adresse', 'field_inhaber'] as $field_name) {
+    if (!isset($form[$field_name])) {
+      continue;
+    }
+
+    $form['theater_membership_container'][$field_name] = $form[$field_name];
+    unset($form[$field_name]);
+  }
+
+  if (isset($form['field_plz'], $form['field_ort'])) {
+    $field_plz = $form['field_plz'];
+    $field_ort = $form['field_ort'];
+
+    $form['theater_membership_location'] = [
+      '#type' => 'container',
+      '#weight' => min($field_plz['#weight'] ?? 0, $field_ort['#weight'] ?? 0),
+      '#attributes' => [
+        'class' => ['theater-membership-location'],
+      ],
+      '#states' => [
+        'visible' => [
+          ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+        ],
+      ],
+    ];
+
+    $form['theater_membership_location']['field_plz'] = $field_plz;
+    $form['theater_membership_location']['field_ort'] = $field_ort;
+    $form['theater_membership_container']['theater_membership_location'] = $form['theater_membership_location'];
+
+    unset($form['field_plz'], $form['field_ort'], $form['theater_membership_location']);
+  }
+
+  $form['actions']['submit']['#submit'][] = 'theater_membership_user_form_submit';
+  $form['#validate'][] = 'theater_membership_user_form_validate';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_register_form.
+ */
+function theater_membership_form_user_register_form_alter(array &$form, FormStateInterface $form_state): void {
+  foreach (['field_iban', 'field_mandate_reference'] as $field_name) {
+    if (isset($form[$field_name])) {
+      $form[$field_name]['#access'] = FALSE;
+    }
+  }
+  
+  /*
+  $form['theater_membership_hint'] = [
+    '#type' => 'item',
+    '#weight' => 35,
+    '#markup' => t('Du meldest dich zunaechst als Mitglied an. Wenn du spaeter Foerdermitglied werden willst, kannst du das nach dem Login in deinem Profil aendern.'),
+  ];
+  */
+
+  $form['#validate'][] = 'theater_membership_form_user_register_form_validate';
+}
+
+/**
+ * Validates membership data on the account form.
+ */
+function theater_membership_user_form_validate(array &$form, FormStateInterface $form_state): void {
+  $membership_type = $form_state->getValue('theater_membership_type');
+  $iban_input = (string) $form_state->getValue('theater_membership_iban');
+
+  if ($membership_type !== 'foerdermitglied') {
+    $form_state->setValue('theater_membership_iban', '');
+    return;
+  }
+
+  $iban = theater_membership_normalize_iban($iban_input);
+  if ($iban === '') {
+    $form_state->setErrorByName('theater_membership_iban', t('Bitte gib deine IBAN ein.'));
+    return;
+  }
+
+  if (!theater_membership_is_valid_iban($iban)) {
+    $form_state->setErrorByName('theater_membership_iban', 'Bitte gib eine gültige IBAN ein.');
+    return;
+  }
+
+  $form_state->setValue('theater_membership_iban', $iban);
+}
+
+/**
+ * AJAX callback for live IBAN validation.
+ */
+function theater_membership_iban_ajax_callback(array &$form, FormStateInterface $form_state): array {
+  $membership_type = (string) $form_state->getValue('theater_membership_type', 'mitglied');
+  $iban = theater_membership_normalize_iban((string) $form_state->getValue('theater_membership_iban', ''));
+  $trigger = $form_state->getTriggeringElement()['#name'] ?? '';
+
+  if ($trigger === 'theater_membership_type') {
+    $form['theater_membership_container']['theater_membership_iban_feedback']['message']['#markup'] = '';
+  }
+  else {
+    $form['theater_membership_container']['theater_membership_iban_feedback']['message']['#markup'] = theater_membership_build_iban_feedback_markup($membership_type, $iban);
+  }
+
+  return $form['theater_membership_container']['theater_membership_iban_feedback'];
+}
+
+/**
+ * Ensures hidden membership fields stay empty during registration.
+ */
+function theater_membership_form_user_register_form_validate(array &$form, FormStateInterface $form_state): void {
+  foreach (['field_iban', 'field_mandate_reference'] as $field_name) {
+    if ($form_state->hasValue($field_name)) {
+      $form_state->setValue($field_name, []);
+    }
+  }
+}
+
+/**
+ * Persists membership data and synchronizes roles.
+ */
+function theater_membership_user_form_submit(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $account = $form_object->getEntity();
+  if (!$account instanceof UserInterface || !$account->id()) {
+    return;
+  }
+
+  $membership_type = (string) $form_state->getValue('theater_membership_type', 'mitglied');
+  $iban = (string) $form_state->getValue('theater_membership_iban', '');
+  $existing_iban = theater_membership_get_user_field_value($account, 'field_iban');
+  $mandate_reference = theater_membership_get_user_field_value($account, 'field_mandate_reference');
+
+  theater_membership_sync_roles($account, $membership_type);
+
+  if ($membership_type === 'foerdermitglied') {
+    if ($mandate_reference === '' || $iban !== $existing_iban) {
+      $mandate_reference = theater_membership_generate_mandate_reference((int) $account->id());
+    }
+  }
+  else {
+    $iban = '';
+    $mandate_reference = '';
+  }
+
+  theater_membership_set_user_field_value($account, 'field_iban', $iban);
+  theater_membership_set_user_field_value($account, 'field_mandate_reference', $mandate_reference);
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function theater_membership_user_presave(UserInterface $account): void {
+  if ($account->hasRole('administrator')) {
+    return;
+  }
+
+  if (!$account->hasRole('mitglied') && !$account->hasRole('foerdermitglied')) {
+    $account->addRole('mitglied');
+  }
+}
+
+/**
+ * Loads effective membership data from the user entity.
+ */
+function theater_membership_load_membership(int $uid): array {
+  $account = User::load($uid);
+  if (!$account instanceof UserInterface) {
+    return [];
+  }
+
+  return [
+    'membership_type' => theater_membership_get_current_membership_type($account),
+    'iban' => theater_membership_get_user_field_value($account, 'field_iban'),
+    'mandate_reference' => theater_membership_get_user_field_value($account, 'field_mandate_reference'),
+  ];
+}
+
+/**
+ * Checks whether the acting user may change the membership block.
+ */
+function theater_membership_user_can_manage_membership(AccountInterface $current_user, UserInterface $account): bool {
+  return $current_user->hasPermission('administer users') || (int) $current_user->id() === (int) $account->id();
+}
+
+/**
+ * Returns the effective membership type based on roles.
+ */
+function theater_membership_get_current_membership_type(UserInterface $account): string {
+  return $account->hasRole('foerdermitglied') ? 'foerdermitglied' : 'mitglied';
+}
+
+/**
+ * Syncs the member roles on the user account.
+ */
+function theater_membership_sync_roles(UserInterface $account, string $membership_type): void {
+  if (!$account instanceof User) {
+    return;
+  }
+
+  foreach (['mitglied', 'foerdermitglied'] as $role_id) {
+    if ($account->hasRole($role_id)) {
+      $account->removeRole($role_id);
+    }
+  }
+
+  $account->addRole($membership_type);
+}
+
+/**
+ * Normalizes user-entered IBAN values.
+ */
+function theater_membership_normalize_iban(string $iban): string {
+  return strtoupper(preg_replace('/\s+/', '', trim($iban)) ?? '');
+}
+
+/**
+ * Validates an IBAN using the MOD-97 checksum.
+ */
+function theater_membership_is_valid_iban(string $iban): bool {
+  if (!preg_match('/^[A-Z]{2}[0-9A-Z]{13,32}$/', $iban)) {
+    return FALSE;
+  }
+
+  $rearranged = substr($iban, 4) . substr($iban, 0, 4);
+  $expanded = '';
+
+  foreach (str_split($rearranged) as $char) {
+    $expanded .= ctype_alpha($char) ? (string) (ord($char) - 55) : $char;
+  }
+
+  $checksum = 0;
+  foreach (str_split($expanded, 7) as $chunk) {
+    $checksum = (int) (($checksum . $chunk) % 97);
+  }
+
+  return $checksum === 1;
+}
+
+/**
+ * Generates a mandate reference.
+ */
+function theater_membership_generate_mandate_reference(int $uid): string {
+  return sprintf('TVZ-%06d-%d', $uid, \Drupal::time()->getRequestTime());
+}
+
+/**
+ * Builds the AJAX feedback markup for the IBAN field.
+ */
+function theater_membership_build_iban_feedback_markup(string $membership_type, string $iban): string {
+  if ($membership_type !== 'foerdermitglied') {
+    return '';
+  }
+
+  if ($iban === '') {
+    return '';
+  }
+
+  if (theater_membership_is_valid_iban($iban)) {
+    return '<div class="messages messages--status">' . t('Die IBAN ist formal gültig.') . '</div>';
+  }
+
+  return '<div class="messages messages--error">' . t('Die IBAN ist ungültig. Bitte prüfe Länderkürzel, Stellenzahl und Prüfziffer.') . '</div>';
+}
+
+/**
+ * Returns a simple text field value from the user entity.
+ */
+function theater_membership_get_user_field_value(UserInterface $account, string $field_name): string {
+  if (!$account->hasField($field_name) || $account->get($field_name)->isEmpty()) {
+    return '';
+  }
+
+  return (string) $account->get($field_name)->value;
+}
+
+/**
+ * Sets a simple text field value on the user entity.
+ */
+function theater_membership_set_user_field_value(UserInterface $account, string $field_name, string $value): void {
+  if (!$account->hasField($field_name)) {
+    return;
+  }
+
+  $account->set($field_name, $value);
+}
