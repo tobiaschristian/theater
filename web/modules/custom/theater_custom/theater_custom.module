@@ -110,11 +110,13 @@ function theater_custom_alter_user_login_form(array &$form, FormStateInterface $
     $form['name']['#title'] = t('E-Mail');
     $form['name']['#title_display'] = FALSE;
     $form['name']['#placeholder'] = 'E-Mail Adresse';
+    unset($form['name']['#description']);
   }
 
   if (isset($form['pass'])) {
     $form['pass']['#title'] = t('Passwort');
     $form['pass']['#title_display'] = FALSE;
+    $form['pass']['#placeholder'] = 'Passwort';
   }
 
   if (isset($form['actions']['submit'])) {
