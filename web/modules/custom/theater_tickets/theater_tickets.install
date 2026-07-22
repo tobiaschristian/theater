@@ -57,3 +57,85 @@ function theater_tickets_schema(): array {
 
   return $schema;
 }
+
+/**
+ * Legt den Saal "Theatersaal" mit den 114 tatsächlich verkauften Plätzen an.
+ *
+ * Der reale Sitzplan hat unregelmäßige Reihenlängen und zusätzliche
+ * Sonderkarten-Plätze (13A, 26A, 27A, 41A, 114–119), die nach Absprache
+ * gar nicht als buchbare Plätze angelegt werden. Platz 120 ist ein
+ * Gang-Platz und bekommt die Kategorie "gang" für den Hinweistext im
+ * Sitzplan ("muss in den Pausen frei gemacht werden").
+ */
+function theater_tickets_update_10001(): string {
+  $saalStorage = \Drupal::entityTypeManager()->getStorage('saal');
+  $saal = $saalStorage->load('theatersaal');
+
+  if (!$saal) {
+    $saal = \Drupal\theater_tickets\Entity\Saal::create([
+      'id' => 'theatersaal',
+      'label' => 'Theatersaal',
+      'description' => 'Haupt-Theatersaal, 114 buchbare Plätze (Sonderkarten und Reihe 8 links nicht enthalten).',
+    ]);
+    $saal->save();
+  }
+
+  // Reihe => [erste Platznummer, letzte Platznummer]. Reihen 1–7 sind
+  // durchgehend nummeriert, Sonderkarten-Plätze liegen außerhalb dieser
+  // Bereiche und werden dadurch automatisch ausgelassen.
+  $ranges = [
+    '1' => [1, 12],
+    '2' => [13, 26],
+    '3' => [27, 41],
+    '4' => [42, 58],
+    '5' => [59, 76],
+    '6' => [77, 94],
+    '7' => [95, 113],
+  ];
+
+  $platzStorage = \Drupal::entityTypeManager()->getStorage('theater_platz');
+  $created = 0;
+
+  foreach ($ranges as $rowLabel => [$from, $to]) {
+    $rowLabel = (string) $rowLabel;
+    for ($seatNumber = $from; $seatNumber <= $to; $seatNumber++) {
+      if (theater_tickets_seat_exists($platzStorage, $saal->id(), $rowLabel, $seatNumber)) {
+        continue;
+      }
+      $platzStorage->create([
+        'saal' => $saal->id(),
+        'row_label' => $rowLabel,
+        'seat_number' => $seatNumber,
+      ])->save();
+      $created++;
+    }
+  }
+
+  // Reihe 8: nur Platz 120 (Gang-Platz), 114–119 sind Sonderkarten.
+  if (!theater_tickets_seat_exists($platzStorage, $saal->id(), '8', 120)) {
+    $platzStorage->create([
+      'saal' => $saal->id(),
+      'row_label' => '8',
+      'seat_number' => 120,
+      'category' => 'gang',
+    ])->save();
+    $created++;
+  }
+
+  return "Saal 'Theatersaal': {$created} neue Plätze angelegt.";
+}
+
+/**
+ * Prüft, ob ein Platz mit dieser Reihe/Nummer im Saal bereits existiert.
+ */
+function theater_tickets_seat_exists($platzStorage, string $saalId, string $rowLabel, int $seatNumber): bool {
+  $count = $platzStorage->getQuery()
+    ->condition('saal', $saalId)
+    ->condition('row_label', $rowLabel)
+    ->condition('seat_number', $seatNumber)
+    ->accessCheck(FALSE)
+    ->count()
+    ->execute();
+
+  return $count > 0;
+}

@@ -86,6 +86,10 @@ final class SeatPickerForm extends FormBase {
       $row = ['#type' => 'container', '#attributes' => ['class' => ['theater-seat-row']]];
       $row['label'] = ['#markup' => $seat->getDisplayLabel()];
 
+      if ($seat->getCategory() === 'gang') {
+        $row['note'] = ['#markup' => ' <em>(' . $this->t('Platz im Gang, muss in den Pausen frei gemacht werden') . ')</em>'];
+      }
+
       if (isset($myHoldSeatIds[$seatId])) {
         $row['status'] = ['#markup' => ' — ' . $this->t('von Ihnen reserviert') . ' '];
         $row['release'] = [

@@ -31,4 +31,9 @@ interface PlatzInterface extends ContentEntityInterface {
    */
   public function getDisplayLabel(): string;
 
+  /**
+   * Gibt die Kategorie zurück (leer = normaler Platz, z. B. "gang").
+   */
+  public function getCategory(): string;
+
 }

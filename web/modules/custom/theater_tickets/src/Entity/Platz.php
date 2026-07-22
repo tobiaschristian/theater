@@ -12,8 +12,9 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 /**
  * Definiert die Platz-Entity (ein einzelner Sitzplatz in einem Saal).
  *
- * Pro Saal können hunderte Plätze existieren; sie werden per
- * PlatzGeneratorService in Massen erzeugt, nicht einzeln von Hand.
+ * Pro Saal können hunderte Plätze existieren; sie werden über einen
+ * Update-Hook passend zum tatsächlichen Sitzplan des jeweiligen Saals
+ * angelegt (unregelmäßige Reihenlängen, keine generische Massenerzeugung).
  *
  * @ContentEntityType(
  *   id = "theater_platz",
@@ -56,10 +57,10 @@ final class Platz extends ContentEntityBase implements PlatzInterface {
       ->setLabel(new TranslatableMarkup('Platznummer'))
       ->setRequired(TRUE);
 
-    // Dokumentierter Erweiterungspunkt für spätere Preisstaffelung
-    // (z. B. "Parkett"/"Loge"). In Phase 1 unbenutzt und nicht validiert.
+    // Freitext-Kategorie für Hinweise im Sitzplan, z. B. "gang" für Plätze,
+    // die in den Pausen frei gemacht werden müssen. Leer = normaler Platz.
     $fields['category'] = BaseFieldDefinition::create('string')
-      ->setLabel(new TranslatableMarkup('Kategorie (reserviert für spätere Preisstaffelung)'))
+      ->setLabel(new TranslatableMarkup('Kategorie'))
       ->setSetting('max_length', 64)
       ->setRequired(FALSE);
 
@@ -88,6 +89,13 @@ final class Platz extends ContentEntityBase implements PlatzInterface {
    */
   public function getSeatNumber(): int {
     return (int) $this->get('seat_number')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCategory(): string {
+    return (string) $this->get('category')->value;
   }
 
   /**

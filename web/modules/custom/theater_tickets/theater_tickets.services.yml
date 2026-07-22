@@ -20,7 +20,3 @@ services:
     arguments: ['@database', '@datetime.time', '@entity_type.manager', '@logger.channel.theater_tickets']
 
   Drupal\theater_tickets\PurchaseServiceInterface: '@theater_tickets.purchase'
-
-  theater_tickets.platz_generator:
-    class: Drupal\theater_tickets\PlatzGeneratorService
-    arguments: ['@entity_type.manager']

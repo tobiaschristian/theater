@@ -11,8 +11,7 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *
  * Ein Saal wird selten angelegt oder geändert (wenige Räume) und dient als
  * Stammdatum, auf das Vorstellungen und Plätze verweisen. Das eigentliche
- * Platzinventar lebt in Platz-Entities, nicht in $rows/$seatsPerRow hier –
- * diese beiden Werte sind reine Vorbelegungen für das Generierungsformular.
+ * Platzinventar lebt in Platz-Entities.
  *
  * @ConfigEntityType(
  *   id = "saal",
@@ -46,8 +45,6 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "id",
  *     "label",
  *     "description",
- *     "rows",
- *     "seats_per_row",
  *   },
  * )
  */
@@ -67,15 +64,5 @@ final class Saal extends ConfigEntityBase implements SaalInterface {
    * Freitext-Beschreibung.
    */
   protected string $description = '';
-
-  /**
-   * Zuletzt verwendete Anzahl Reihen (Vorbelegung für das Generierungsformular).
-   */
-  protected int $rows = 0;
-
-  /**
-   * Zuletzt verwendete Anzahl Plätze pro Reihe (Vorbelegung für das Formular).
-   */
-  protected int $seats_per_row = 0;
 
 }
