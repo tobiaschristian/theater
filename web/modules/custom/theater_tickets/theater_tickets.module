@@ -2,6 +2,31 @@
 
 declare(strict_types=1);
 
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for node.
+ *
+ * Ergänzt die Vorstellung-Seite um einen deutlichen Link zum Sitzplan,
+ * statt die Buchung über die Node-Seite selbst abzuwickeln.
+ */
+function theater_tickets_node_view(array &$build, NodeInterface $node, EntityViewDisplayInterface $display, string $view_mode): void {
+  if ($node->bundle() !== 'vorstellung' || $view_mode !== 'full') {
+    return;
+  }
+
+  $build['theater_tickets_seat_picker_link'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['theater-tickets-cta']],
+    '#weight' => -10,
+    'link' => Link::fromTextAndUrl(t('Jetzt Plätze wählen'), Url::fromRoute('theater_tickets.seat_picker', ['node' => $node->id()]))
+      ->toRenderable() + ['#attributes' => ['class' => ['button']]],
+  ];
+}
+
 /**
  * Implements hook_cron().
  *

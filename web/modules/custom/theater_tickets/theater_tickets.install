@@ -126,6 +126,46 @@ function theater_tickets_update_10001(): string {
 }
 
 /**
+ * Blendet Saison/Saal aus der Node-Anzeige aus, formatiert Termin/Preis.
+ *
+ * Saison und Saal sind interne Verwaltungsdaten ohne Mehrwert für
+ * Besucher; die Buchung läuft ohnehin über den Sitzplan-Link (siehe
+ * theater_tickets_node_view()), nicht über die Node-Felder selbst.
+ */
+function theater_tickets_update_10002(): string {
+  $display = \Drupal::service('entity_display.repository')->getViewDisplay('node', 'vorstellung', 'default');
+
+  $display->removeComponent('field_saison');
+  $display->removeComponent('field_saal');
+
+  $display->setComponent('field_datum', [
+    'label' => 'above',
+    'type' => 'datetime_default',
+    'settings' => [
+      'timezone_override' => '',
+      'format_type' => 'long',
+    ],
+    'weight' => 0,
+  ]);
+
+  $display->setComponent('field_preis', [
+    'label' => 'above',
+    'type' => 'number_decimal',
+    'settings' => [
+      'thousand_separator' => '.',
+      'decimal_separator' => ',',
+      'scale' => 2,
+      'prefix_suffix' => TRUE,
+    ],
+    'weight' => 1,
+  ]);
+
+  $display->save();
+
+  return 'Anzeige für Vorstellung aktualisiert (Saison/Saal ausgeblendet, Termin/Preis formatiert).';
+}
+
+/**
  * Prüft, ob ein Platz mit dieser Reihe/Nummer im Saal bereits existiert.
  */
 function theater_tickets_seat_exists($platzStorage, string $saalId, string $rowLabel, int $seatNumber): bool {
