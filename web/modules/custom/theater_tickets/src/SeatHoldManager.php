@@ -7,6 +7,7 @@ namespace Drupal\theater_tickets;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\IntegrityConstraintViolationException;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
 use Drupal\theater_tickets\Entity\PlatzInterface;
@@ -26,6 +27,7 @@ final class SeatHoldManager implements SeatHoldManagerInterface {
     private readonly Connection $database,
     private readonly TimeInterface $time,
     private readonly TicketQuotaServiceInterface $quotaService,
+    private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly LoggerInterface $logger,
   ) {}
 
@@ -35,6 +37,10 @@ final class SeatHoldManager implements SeatHoldManagerInterface {
   public function createHold(PlatzInterface $seat, NodeInterface $performance, AccountInterface $account): SeatHoldResult {
     if ($account->isAnonymous()) {
       return SeatHoldResult::failure('login_required');
+    }
+
+    if ($this->isSold($seat, $performance)) {
+      return SeatHoldResult::failure('seat_sold');
     }
 
     if (!$this->quotaService->canReserve($account, $performance)) {
@@ -82,6 +88,24 @@ final class SeatHoldManager implements SeatHoldManagerInterface {
       $this->logger->error('Sitzplatzreservierung fehlgeschlagen: @message', ['@message' => $e->getMessage()]);
       return SeatHoldResult::failure('unexpected_error');
     }
+  }
+
+  /**
+   * Prüft, ob für diesen Platz in dieser Vorstellung bereits ein Ticket existiert.
+   *
+   * Nötig, weil der Seat-Hold beim Kauf gelöscht wird (siehe PurchaseService)
+   * – ohne diese Prüfung könnte ein bereits verkaufter Platz sonst erneut
+   * reserviert werden.
+   */
+  private function isSold(PlatzInterface $seat, NodeInterface $performance): bool {
+    $count = $this->entityTypeManager->getStorage('theater_ticket')->getQuery()
+      ->condition('seat', $seat->id())
+      ->condition('performance', $performance->id())
+      ->accessCheck(FALSE)
+      ->count()
+      ->execute();
+
+    return $count > 0;
   }
 
   /**

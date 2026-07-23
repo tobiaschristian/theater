@@ -97,6 +97,17 @@ final class SeatPickerForm extends FormBase {
     $myHolds = $this->currentUser->isAnonymous() ? [] : $this->seatHoldManager->getActiveHoldsForUser($this->currentUser, $node);
     $myHoldSeatIds = array_column($myHolds, 'id', 'seat_id');
 
+    $soldSeatIds = [];
+    $ticketStorage = $this->entityTypeManager->getStorage('theater_ticket');
+    $ticketIds = $ticketStorage->getQuery()
+      ->condition('performance', $node->id())
+      ->accessCheck(FALSE)
+      ->execute();
+    foreach ($ticketStorage->loadMultiple($ticketIds) as $ticket) {
+      /** @var \Drupal\theater_tickets\Entity\TicketInterface $ticket */
+      $soldSeatIds[$ticket->getSeatId()] = TRUE;
+    }
+
     $ajax = [
       'callback' => '::ajaxRefresh',
       'wrapper' => self::WRAPPER_ID,
@@ -122,7 +133,10 @@ final class SeatPickerForm extends FormBase {
         $row['note'] = ['#markup' => ' <em>(' . $this->t('Platz im Gang, muss in den Pausen frei gemacht werden') . ')</em>'];
       }
 
-      if (isset($myHoldSeatIds[$seatId])) {
+      if (isset($soldSeatIds[$seatId])) {
+        $row['status'] = ['#markup' => ' — ' . $this->t('verkauft')];
+      }
+      elseif (isset($myHoldSeatIds[$seatId])) {
         $row['status'] = ['#markup' => ' — ' . $this->t('von Ihnen reserviert') . ' '];
         $row['release'] = [
           '#type' => 'submit',
@@ -261,6 +275,7 @@ final class SeatPickerForm extends FormBase {
   private function reasonToMessage(?string $reason): string {
     return match ($reason) {
       'seat_taken' => (string) $this->t('Dieser Platz wurde soeben von jemand anderem reserviert.'),
+      'seat_sold' => (string) $this->t('Dieser Platz ist bereits verkauft.'),
       'quota_exceeded' => (string) $this->t('Sie haben Ihr Kauflimit erreicht.'),
       'login_required' => (string) $this->t('Bitte melden Sie sich an, um Plätze zu reservieren.'),
       default => (string) $this->t('Die Reservierung konnte nicht angelegt werden.'),

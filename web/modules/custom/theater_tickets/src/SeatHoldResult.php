@@ -26,7 +26,7 @@ final class SeatHoldResult {
    * Builds a failure result.
    *
    * @param string $reason
-   *   One of 'seat_taken', 'quota_exceeded', 'login_required', 'unexpected_error'.
+   *   One of 'seat_taken', 'seat_sold', 'quota_exceeded', 'login_required', 'unexpected_error'.
    */
   public static function failure(string $reason): self {
     return new self(FALSE, NULL, $reason);

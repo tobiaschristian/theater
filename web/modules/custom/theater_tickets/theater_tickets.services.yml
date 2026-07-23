@@ -11,7 +11,7 @@ services:
 
   theater_tickets.seat_hold_manager:
     class: Drupal\theater_tickets\SeatHoldManager
-    arguments: ['@database', '@datetime.time', '@theater_tickets.ticket_quota', '@logger.channel.theater_tickets']
+    arguments: ['@database', '@datetime.time', '@theater_tickets.ticket_quota', '@entity_type.manager', '@logger.channel.theater_tickets']
 
   Drupal\theater_tickets\SeatHoldManagerInterface: '@theater_tickets.seat_hold_manager'
 
