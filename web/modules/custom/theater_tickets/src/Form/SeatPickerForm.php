@@ -18,15 +18,25 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Test-Oberfläche: Sitzplatzübersicht mit Reservieren/Freigeben/Kaufen.
  *
  * Dient in Phase 1 dazu, den kompletten Reservierungs-/Kauf-Ablauf ohne
- * Drupal Commerce manuell durchspielen zu können.
+ * Drupal Commerce manuell durchspielen zu können. Reservieren/Freigeben/
+ * Kaufen laufen per AJAX, damit mehrere Plätze schnell hintereinander
+ * reserviert werden können, ohne dass die Seite jedes Mal neu lädt.
  */
 final class SeatPickerForm extends FormBase {
 
+  /**
+   * HTML-ID des per AJAX aktualisierten Bereichs (Meldungen, Sitze, Kaufen).
+   */
+  private const WRAPPER_ID = 'theater-seat-picker-wrapper';
+
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly SeatHoldManagerInterface $seatHoldManager,
-    private readonly PurchaseServiceInterface $purchaseService,
-    private readonly AccountProxyInterface $currentUser,
+    // Nicht readonly: FormBase::__wakeup() (DependencySerializationTrait)
+    // reinjiziert diese Services nach jeder AJAX-Anfrage per direkter
+    // Zuweisung, was mit readonly-Properties kollidiert.
+    private EntityTypeManagerInterface $entityTypeManager,
+    private SeatHoldManagerInterface $seatHoldManager,
+    private PurchaseServiceInterface $purchaseService,
+    private AccountProxyInterface $currentUser,
   ) {}
 
   /**
@@ -52,6 +62,15 @@ final class SeatPickerForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, ?NodeInterface $node = NULL): array {
+    // Der komplette Formularinhalt ergibt sich deterministisch aus dem
+    // Routenparameter (Node) und dem aktuellen Nutzer, es gibt keinen
+    // mehrstufigen Zustand, der über den Formular-Cache erhalten werden
+    // müsste. Cache deaktivieren, damit jede AJAX-Anfrage ein frisch aus
+    // dem Container konstruiertes Formularobjekt verwendet, statt ein aus
+    // dem Cache deserialisiertes (dessen injizierte Services sonst nicht
+    // zuverlässig wiederhergestellt werden).
+    $form_state->disableCache();
+
     if (!$node instanceof NodeInterface || $node->bundle() !== 'vorstellung') {
       $form['error'] = ['#markup' => $this->t('Vorstellung nicht gefunden.')];
       return $form;
@@ -78,7 +97,20 @@ final class SeatPickerForm extends FormBase {
     $myHolds = $this->currentUser->isAnonymous() ? [] : $this->seatHoldManager->getActiveHoldsForUser($this->currentUser, $node);
     $myHoldSeatIds = array_column($myHolds, 'id', 'seat_id');
 
-    $form['seats'] = ['#type' => 'container', '#attributes' => ['class' => ['theater-seat-list']]];
+    $ajax = [
+      'callback' => '::ajaxRefresh',
+      'wrapper' => self::WRAPPER_ID,
+      'effect' => 'fade',
+    ];
+
+    $form['picker'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => self::WRAPPER_ID],
+    ];
+
+    $form['picker']['messages'] = ['#type' => 'status_messages'];
+
+    $form['picker']['seats'] = ['#type' => 'container', '#attributes' => ['class' => ['theater-seat-list']]];
 
     foreach ($seats as $seat) {
       /** @var \Drupal\theater_tickets\Entity\PlatzInterface $seat */
@@ -99,6 +131,7 @@ final class SeatPickerForm extends FormBase {
           '#seat_id' => $seatId,
           '#hold_id' => (int) $myHoldSeatIds[$seatId],
           '#submit' => ['::releaseSubmit'],
+          '#ajax' => $ajax,
         ];
       }
       elseif ($this->seatHoldManager->isHeld($seat, $node)) {
@@ -111,21 +144,29 @@ final class SeatPickerForm extends FormBase {
           '#name' => 'hold:' . $seatId,
           '#seat_id' => $seatId,
           '#submit' => ['::holdSubmit'],
+          '#ajax' => $ajax,
           '#disabled' => $this->currentUser->isAnonymous(),
         ];
       }
 
-      $form['seats'][$seatId] = $row;
+      $form['picker']['seats'][$seatId] = $row;
     }
 
     if (!empty($myHolds)) {
-      $form['purchase'] = [
+      $form['picker']['purchase'] = [
         '#type' => 'submit',
         '#value' => $this->t('@count Platz/Plätze jetzt kaufen', ['@count' => count($myHolds)]),
         '#name' => 'purchase',
         '#submit' => ['::purchaseSubmit'],
+        '#ajax' => $ajax,
       ];
     }
+
+    // Sitzplatzstatus und eigene Reservierungen ändern sich jederzeit
+    // serverseitig (Ablauf, andere Nutzer) unabhängig von diesem Request –
+    // ohne dies würde z. B. Dynamic Page Cache eine einmal gerenderte
+    // Fassung (u. a. den Kaufen-Button) pro Sitzung einfrieren.
+    $form['#cache']['max-age'] = 0;
 
     return $form;
   }
@@ -136,6 +177,17 @@ final class SeatPickerForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     // Alle eigentliche Logik läuft über die spezifischen ::*Submit-Handler
     // der einzelnen Buttons; dies ist nur der Pflicht-Fallback von FormBase.
+  }
+
+  /**
+   * AJAX-Callback: gibt den aktualisierten Sitzplatz-Bereich zurück.
+   *
+   * buildForm() läuft wegen setRebuild() in den *Submit-Handlern vor
+   * diesem Callback erneut, form['picker'] enthält also bereits den
+   * aktuellen Stand (Meldungen, Sitze, Kaufen-Button).
+   */
+  public function ajaxRefresh(array &$form, FormStateInterface $form_state): array {
+    return $form['picker'];
   }
 
   /**
