@@ -25,6 +25,16 @@ function theater_tickets_node_view(array &$build, NodeInterface $node, EntityVie
     'link' => Link::fromTextAndUrl(t('Jetzt Plätze wählen'), Url::fromRoute('theater_tickets.seat_picker', ['node' => $node->id()]))
       ->toRenderable() + ['#attributes' => ['class' => ['button']]],
   ];
+
+  if (\Drupal::currentUser()->hasPermission('administer theater_tickets')) {
+    $build['theater_tickets_admin_overview_link'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['theater-tickets-admin-cta']],
+      '#weight' => -9,
+      'link' => Link::fromTextAndUrl(t('Sitzplatzübersicht (Admin)'), Url::fromRoute('theater_tickets.admin_seat_overview', ['node' => $node->id()]))
+        ->toRenderable() + ['#attributes' => ['class' => ['button']]],
+    ];
+  }
 }
 
 /**

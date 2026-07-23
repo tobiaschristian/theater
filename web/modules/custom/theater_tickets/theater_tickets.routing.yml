@@ -10,3 +10,16 @@ theater_tickets.seat_picker:
     parameters:
       node:
         type: entity:node
+
+theater_tickets.admin_seat_overview:
+  path: '/admin/theater-tickets/vorstellung/{node}/uebersicht'
+  defaults:
+    _form: '\Drupal\theater_tickets\Form\AdminSeatOverviewForm'
+    _title: 'Sitzplatzübersicht'
+  requirements:
+    _permission: 'administer theater_tickets'
+    node: '\d+'
+  options:
+    parameters:
+      node:
+        type: entity:node
