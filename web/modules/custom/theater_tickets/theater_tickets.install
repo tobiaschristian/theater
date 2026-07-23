@@ -62,10 +62,8 @@ function theater_tickets_schema(): array {
  * Legt den Saal "Theatersaal" mit den 114 tatsächlich verkauften Plätzen an.
  *
  * Der reale Sitzplan hat unregelmäßige Reihenlängen und zusätzliche
- * Sonderkarten-Plätze (13A, 26A, 27A, 41A, 114–119), die nach Absprache
- * gar nicht als buchbare Plätze angelegt werden. Platz 120 ist ein
- * Gang-Platz und bekommt die Kategorie "gang" für den Hinweistext im
- * Sitzplan ("muss in den Pausen frei gemacht werden").
+ * Sonderkarten-Plätze (13A, 26A, 27A, 41A, 114–120), die nach Absprache
+ * gar nicht als buchbare Plätze angelegt werden.
  */
 function theater_tickets_update_10001(): string {
   $saalStorage = \Drupal::entityTypeManager()->getStorage('saal');
@@ -111,17 +109,6 @@ function theater_tickets_update_10001(): string {
     }
   }
 
-  // Reihe 8: nur Platz 120 (Gang-Platz), 114–119 sind Sonderkarten.
-  if (!theater_tickets_seat_exists($platzStorage, $saal->id(), '8', 120)) {
-    $platzStorage->create([
-      'saal' => $saal->id(),
-      'row_label' => '8',
-      'seat_number' => 120,
-      'category' => 'gang',
-    ])->save();
-    $created++;
-  }
-
   return "Saal 'Theatersaal': {$created} neue Plätze angelegt.";
 }
 
@@ -163,6 +150,28 @@ function theater_tickets_update_10002(): string {
   $display->save();
 
   return 'Anzeige für Vorstellung aktualisiert (Saison/Saal ausgeblendet, Termin/Preis formatiert).';
+}
+
+/**
+ * Entfernt Platz 120 (Gang-Platz) wieder — Client hat entschieden, dass
+ * dieser Platz gar nicht angeboten werden soll.
+ */
+function theater_tickets_update_10003(): string {
+  $platzStorage = \Drupal::entityTypeManager()->getStorage('theater_platz');
+  $ids = $platzStorage->getQuery()
+    ->condition('saal', 'theatersaal')
+    ->condition('row_label', '8')
+    ->condition('seat_number', 120)
+    ->accessCheck(FALSE)
+    ->execute();
+
+  if (!$ids) {
+    return "Platz 120 war nicht vorhanden, nichts zu tun.";
+  }
+
+  $platzStorage->delete($platzStorage->loadMultiple($ids));
+
+  return 'Platz 120 (Gang-Platz) entfernt.';
 }
 
 /**
