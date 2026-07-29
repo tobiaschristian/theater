@@ -68,4 +68,16 @@ interface TokenManagerInterface {
    */
   public function setSubscribedForAccount(UserInterface $account, bool $subscribed, string $ip): void;
 
+  /**
+   * Löscht unbestätigte Anmeldungen, die älter als das Zeitlimit sind.
+   *
+   * Schutz gegen Missbrauch/Spam: Wer sich nie über den Bestätigungslink
+   * meldet, verschwindet nach Ablauf der Frist wieder aus der Datenbank,
+   * statt dauerhaft als "pending" liegen zu bleiben.
+   *
+   * @return int
+   *   Anzahl der gelöschten Datensätze.
+   */
+  public function garbageCollectStalePending(int $maxAgeSeconds): int;
+
 }

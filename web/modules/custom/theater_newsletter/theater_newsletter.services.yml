@@ -5,6 +5,6 @@ services:
 
   theater_newsletter.token_manager:
     class: Drupal\theater_newsletter\TokenManager
-    arguments: ['@entity_type.manager', '@datetime.time', '@plugin.manager.mail', '@language_manager', '@logger.channel.theater_newsletter']
+    arguments: ['@entity_type.manager', '@datetime.time', '@Drupal\symfony_mailer\MailerPlusInterface', '@logger.channel.theater_newsletter']
 
   Drupal\theater_newsletter\TokenManagerInterface: '@theater_newsletter.token_manager'

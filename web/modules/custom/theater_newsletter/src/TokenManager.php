@@ -6,9 +6,9 @@ namespace Drupal\theater_newsletter;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
+use Drupal\symfony_mailer\MailerPlusInterface;
 use Drupal\theater_newsletter\Entity\NewsletterSubscriberInterface;
 use Drupal\user\UserInterface;
 use Psr\Log\LoggerInterface;
@@ -26,8 +26,7 @@ final class TokenManager implements TokenManagerInterface {
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly TimeInterface $time,
-    private readonly MailManagerInterface $mailManager,
-    private readonly LanguageManagerInterface $languageManager,
+    private readonly MailerPlusInterface $mailerPlus,
     private readonly LoggerInterface $logger,
   ) {}
 
@@ -209,6 +208,26 @@ final class TokenManager implements TokenManagerInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function garbageCollectStalePending(int $maxAgeSeconds): int {
+    $storage = $this->entityTypeManager->getStorage('newsletter_subscriber');
+    $ids = $storage->getQuery()
+      ->condition('status', NewsletterSubscriberInterface::STATUS_PENDING)
+      ->condition('created', $this->time->getRequestTime() - $maxAgeSeconds, '<')
+      ->accessCheck(FALSE)
+      ->execute();
+
+    if (!$ids) {
+      return 0;
+    }
+
+    $storage->delete($storage->loadMultiple($ids));
+
+    return count($ids);
+  }
+
+  /**
    * Lädt einen Abonnenten-Datensatz per ID.
    */
   private function loadSubscriber(int $subscriberId): ?NewsletterSubscriberInterface {
@@ -232,6 +251,11 @@ final class TokenManager implements TokenManagerInterface {
 
   /**
    * Verschickt die Bestätigungsmail mit Klartext-Token im Link.
+   *
+   * Nutzt das gemeinsame HTML-Twig-Template "theater_newsletter_mail"
+   * (siehe theater_newsletter.module::hook_theme()) über Mailer Plus, statt
+   * eines klassischen hook_mail() – so bekommt die Mail automatisch die
+   * saubere HTML-Hülle von Mailer Plus und lässt sich hier zentral pflegen.
    */
   private function sendConfirmationMail(NewsletterSubscriberInterface $subscriber, string $token): void {
     $url = Url::fromRoute('theater_newsletter.confirm', [
@@ -239,19 +263,22 @@ final class TokenManager implements TokenManagerInterface {
       'token' => $token,
     ], ['absolute' => TRUE])->toString();
 
-    $langcode = $this->languageManager->getDefaultLanguage()->getId();
+    $email = $this->mailerPlus->newEmail('theater_newsletter.confirm')
+      ->setTo($subscriber->getEmail())
+      ->setSubject(new TranslatableMarkup('Bitte bestätige deine Newsletter-Anmeldung'))
+      ->setBody([
+        '#theme' => 'theater_newsletter_mail',
+        '#heading' => new TranslatableMarkup('Newsletter-Anmeldung bestätigen'),
+        '#intro' => new TranslatableMarkup('Bitte bestätige deine Anmeldung zum Newsletter des Theatervereins Zapfendorf über den folgenden Link:'),
+        '#button_url' => $url,
+        '#button_label' => new TranslatableMarkup('Anmeldung bestätigen'),
+        '#outro' => new TranslatableMarkup('Wenn du diese Anmeldung nicht ausgelöst hast, kannst du diese E-Mail einfach ignorieren.'),
+      ]);
 
-    $result = $this->mailManager->mail(
-      'theater_newsletter',
-      'confirm',
-      $subscriber->getEmail(),
-      $langcode,
-      ['confirm_url' => $url],
-    );
-
-    if (!$result['result']) {
-      $this->logger->error('Bestätigungsmail an @email konnte nicht versendet werden.', [
+    if (!$email->send()) {
+      $this->logger->error('Bestätigungsmail an @email konnte nicht versendet werden: @error', [
         '@email' => $subscriber->getEmail(),
+        '@error' => $email->getError(),
       ]);
     }
   }

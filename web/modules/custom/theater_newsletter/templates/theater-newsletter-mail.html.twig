@@ -1,0 +1,50 @@
+{#
+/**
+ * @file
+ * Gemeinsames HTML-Template für alle Newsletter-Mails (Bestätigung,
+ * Abmeldung, ...). Wird von symfony_mailer/Mailer Plus zusätzlich in die
+ * generische E-Mail-Hülle (email-wrap.html.twig) eingebettet, daher hier
+ * bewusst nur der innere Inhalt mit tabellenbasiertem, e-mail-sicherem
+ * Markup statt eigenem <html>/<body>.
+ *
+ * Variablen:
+ * - heading: Überschrift.
+ * - intro: Einleitungstext (Markup erlaubt).
+ * - button_url: Ziel-URL des Call-to-Action-Buttons, oder NULL.
+ * - button_label: Beschriftung des Buttons.
+ * - outro: Abschließender Hinweistext (Markup erlaubt).
+ *
+ * @ingroup themeable
+ */
+#}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; font-family: Arial, Helvetica, sans-serif; color: #1a1a1a;">
+  <tr>
+    <td style="padding: 24px 0 8px 0; font-size: 20px; font-weight: bold;">
+      Theater- &amp; Kulturverein Zapfendorf e.V.
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0 16px 0; font-size: 18px; font-weight: bold;">
+      {{ heading }}
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 0 0 24px 0; font-size: 15px; line-height: 1.5;">
+      {{ intro }}
+    </td>
+  </tr>
+  {% if button_url %}
+    <tr>
+      <td style="padding: 0 0 32px 0;">
+        <a href="{{ button_url }}" style="display: inline-block; padding: 12px 24px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; border-radius: 24px; font-size: 15px;">
+          {{ button_label }}
+        </a>
+      </td>
+    </tr>
+  {% endif %}
+  <tr>
+    <td style="padding: 16px 0 0 0; font-size: 13px; line-height: 1.5; color: #666666; border-top: 1px solid #e0e0e0;">
+      {{ outro }}
+    </td>
+  </tr>
+</table>

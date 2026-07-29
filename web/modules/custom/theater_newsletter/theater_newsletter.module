@@ -3,24 +3,50 @@
 declare(strict_types=1);
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\theater_newsletter\Entity\NewsletterSubscriberInterface;
 use Drupal\user\UserInterface;
 
 /**
- * Implements hook_mail().
+ * Wie lange eine unbestätigte Anmeldung aufbewahrt wird, bevor Cron sie
+ * löscht (Spam-/Missbrauchsschutz).
  */
-function theater_newsletter_mail(string $key, array &$message, array $params): void {
-  if ($key !== 'confirm') {
-    return;
+const THEATER_NEWSLETTER_PENDING_MAX_AGE = 7 * 24 * 60 * 60;
+
+/**
+ * Implements hook_theme().
+ *
+ * Ein gemeinsames HTML-Template für alle Newsletter-Mails (siehe
+ * TokenManager::sendConfirmationMail()).
+ */
+function theater_newsletter_theme(): array {
+  return [
+    'theater_newsletter_mail' => [
+      'variables' => [
+        'heading' => NULL,
+        'intro' => NULL,
+        'button_url' => NULL,
+        'button_label' => NULL,
+        'outro' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Löscht unbestätigte Newsletter-Anmeldungen, die länger als
+ * THEATER_NEWSLETTER_PENDING_MAX_AGE offen sind (Spamschutz: verhindert,
+ * dass nie bestätigte Anmeldungen dauerhaft in der Tabelle bleiben).
+ */
+function theater_newsletter_cron(): void {
+  $deleted = \Drupal::service('theater_newsletter.token_manager')->garbageCollectStalePending(THEATER_NEWSLETTER_PENDING_MAX_AGE);
+
+  if ($deleted > 0) {
+    \Drupal::logger('theater_newsletter')->info('@count unbestätigte Newsletter-Anmeldungen (älter als 7 Tage) gelöscht.', [
+      '@count' => $deleted,
+    ]);
   }
-
-  $message['subject'] = t('Bitte bestätige deine Newsletter-Anmeldung');
-  $body = t("Hallo,\n\nbitte bestätige deine Anmeldung zum Newsletter des Theatervereins Zapfendorf über den folgenden Link:\n\n@url\n\nWenn du diese Anmeldung nicht ausgelöst hast, kannst du diese E-Mail einfach ignorieren.", [
-    '@url' => $params['confirm_url'],
-  ]);
-
-  $message['body'][] = MailFormatHelper::wrapMail((string) $body);
 }
 
 /**
