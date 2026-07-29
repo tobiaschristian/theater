@@ -1,0 +1,8 @@
+name: Theater Newsletter
+type: module
+description: 'Eigener Newsletter-Dienst mit Double-Opt-in-Anmeldung und tokenbasierter Abmeldung, ohne Pflicht-Benutzerkonto.'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:user
+  - symfony_mailer:symfony_mailer

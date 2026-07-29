@@ -1,0 +1,5 @@
+entity.newsletter_subscriber.collection:
+  title: 'Newsletter-Abonnenten'
+  description: 'Newsletter-Abonnenten einsehen.'
+  route_name: entity.newsletter_subscriber.collection
+  parent: system.admin_content

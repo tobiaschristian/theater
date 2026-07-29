@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Mail\MailFormatHelper;
+use Drupal\theater_newsletter\Entity\NewsletterSubscriberInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_mail().
+ */
+function theater_newsletter_mail(string $key, array &$message, array $params): void {
+  if ($key !== 'confirm') {
+    return;
+  }
+
+  $message['subject'] = t('Bitte bestätige deine Newsletter-Anmeldung');
+  $body = t("Hallo,\n\nbitte bestätige deine Anmeldung zum Newsletter des Theatervereins Zapfendorf über den folgenden Link:\n\n@url\n\nWenn du diese Anmeldung nicht ausgelöst hast, kannst du diese E-Mail einfach ignorieren.", [
+    '@url' => $params['confirm_url'],
+  ]);
+
+  $message['body'][] = MailFormatHelper::wrapMail((string) $body);
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * Verknüpft einen bestehenden, noch nicht zugeordneten Abonnenten-
+ * Datensatz automatisch mit dem Konto, falls die E-Mail-Adresse passt.
+ */
+function theater_newsletter_user_login(UserInterface $account): void {
+  \Drupal::service('theater_newsletter.token_manager')->syncAccountLink($account);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_form.
+ *
+ * Fügt eine Checkbox zur Newsletter-Verwaltung in die Kontoeinstellungen
+ * ein (Muster: theater_membership_form_user_form_alter()). Eingeloggte
+ * Nutzer verwalten ihr Abo hierüber ohne Token, da die Session selbst der
+ * Identitätsnachweis ist.
+ */
+function theater_newsletter_form_user_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $account = $form_object->getEntity();
+  if (!$account instanceof UserInterface || $account->isAnonymous()) {
+    return;
+  }
+
+  $current_user = \Drupal::currentUser();
+  if ((int) $current_user->id() !== (int) $account->id() && !$current_user->hasPermission('administer users')) {
+    return;
+  }
+
+  $token_manager = \Drupal::service('theater_newsletter.token_manager');
+  $subscriber = $token_manager->getSubscriberForAccount($account);
+
+  $form['theater_newsletter'] = [
+    '#type' => 'container',
+    '#title' => t('Newsletter'),
+    '#weight' => 5,
+  ];
+
+  $form['theater_newsletter']['theater_newsletter_subscribed'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Ich möchte den Newsletter erhalten'),
+    '#default_value' => $subscriber instanceof NewsletterSubscriberInterface && $subscriber->isConfirmed(),
+  ];
+
+  $form['actions']['submit']['#submit'][] = 'theater_newsletter_user_form_submit';
+}
+
+/**
+ * Persistiert die Newsletter-Checkbox aus den Kontoeinstellungen.
+ */
+function theater_newsletter_user_form_submit(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $account = $form_object->getEntity();
+  if (!$account instanceof UserInterface || !$account->id()) {
+    return;
+  }
+
+  $subscribed = (bool) $form_state->getValue('theater_newsletter_subscribed');
+  $ip = \Drupal::request()->getClientIp() ?? '0.0.0.0';
+
+  \Drupal::service('theater_newsletter.token_manager')->setSubscribedForAccount($account, $subscribed, $ip);
+}

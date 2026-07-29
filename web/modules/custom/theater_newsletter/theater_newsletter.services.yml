@@ -1,0 +1,10 @@
+services:
+  logger.channel.theater_newsletter:
+    parent: logger.channel_base
+    arguments: ['theater_newsletter']
+
+  theater_newsletter.token_manager:
+    class: Drupal\theater_newsletter\TokenManager
+    arguments: ['@entity_type.manager', '@datetime.time', '@plugin.manager.mail', '@language_manager', '@logger.channel.theater_newsletter']
+
+  Drupal\theater_newsletter\TokenManagerInterface: '@theater_newsletter.token_manager'

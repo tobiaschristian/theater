@@ -1,0 +1,27 @@
+theater_newsletter.subscribe:
+  path: '/newsletter/anmelden'
+  defaults:
+    _form: '\Drupal\theater_newsletter\Form\SubscribeForm'
+    _title: 'Newsletter abonnieren'
+  requirements:
+    _access: 'TRUE'
+
+theater_newsletter.confirm:
+  path: '/newsletter/bestaetigen/{subscriber}/{token}'
+  defaults:
+    _form: '\Drupal\theater_newsletter\Form\ConfirmForm'
+    _title: 'Newsletter-Anmeldung bestätigen'
+  requirements:
+    _access: 'TRUE'
+    subscriber: '\d+'
+    token: '[0-9a-f]{64}'
+
+theater_newsletter.unsubscribe:
+  path: '/newsletter/abmelden/{subscriber}/{token}'
+  defaults:
+    _form: '\Drupal\theater_newsletter\Form\UnsubscribeForm'
+    _title: 'Vom Newsletter abmelden'
+  requirements:
+    _access: 'TRUE'
+    subscriber: '\d+'
+    token: '[0-9a-f]{64}'

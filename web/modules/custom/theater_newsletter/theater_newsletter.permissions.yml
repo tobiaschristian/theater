@@ -1,0 +1,3 @@
+administer theater_newsletter:
+  title: 'Newsletter-Abonnenten verwalten'
+  restrict access: true
