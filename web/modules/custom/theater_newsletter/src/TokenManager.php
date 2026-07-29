@@ -264,16 +264,21 @@ final class TokenManager implements TokenManagerInterface {
     ], ['absolute' => TRUE])->toString();
 
     $email = $this->mailerPlus->newEmail('theater_newsletter.confirm')
-      ->setTo($subscriber->getEmail())
-      ->setSubject(new TranslatableMarkup('Bitte bestätige deine Newsletter-Anmeldung'))
-      ->setBody([
-        '#theme' => 'theater_newsletter_mail',
-        '#heading' => new TranslatableMarkup('Newsletter-Anmeldung bestätigen'),
-        '#intro' => new TranslatableMarkup('Bitte bestätige deine Anmeldung zum Newsletter des Theatervereins Zapfendorf über den folgenden Link:'),
-        '#button_url' => $url,
-        '#button_label' => new TranslatableMarkup('Anmeldung bestätigen'),
-        '#outro' => new TranslatableMarkup('Wenn du diese Anmeldung nicht ausgelöst hast, kannst du diese E-Mail einfach ignorieren.'),
-      ]);
+      ->setTo($subscriber->getEmail());
+
+    // setSubject()/setBody() sind erst ab der Build-Phase gültig, daher
+    // per Callback statt direkt nach newEmail() (Init-Phase).
+    $email->addCallback(static function ($email) use ($url): void {
+      $email->setSubject(new TranslatableMarkup('Bitte bestätige deine Newsletter-Anmeldung'))
+        ->setBody([
+          '#theme' => 'theater_newsletter_mail',
+          '#heading' => new TranslatableMarkup('Newsletter-Anmeldung bestätigen'),
+          '#intro' => new TranslatableMarkup('Bitte bestätige deine Anmeldung zum Newsletter des Theatervereins Zapfendorf über den folgenden Link:'),
+          '#button_url' => $url,
+          '#button_label' => new TranslatableMarkup('Anmeldung bestätigen'),
+          '#outro' => new TranslatableMarkup('Wenn du diese Anmeldung nicht ausgelöst hast, kannst du diese E-Mail einfach ignorieren.'),
+        ]);
+    });
 
     if (!$email->send()) {
       $this->logger->error('Bestätigungsmail an @email konnte nicht versendet werden: @error', [
