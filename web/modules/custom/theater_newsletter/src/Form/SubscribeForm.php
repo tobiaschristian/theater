@@ -8,6 +8,7 @@ use Drupal\Core\Flood\FloodInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Url;
 use Drupal\theater_newsletter\TokenManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -59,6 +60,12 @@ final class SubscribeForm extends FormBase {
     $form['email'] = [
       '#type' => 'email',
       '#title' => $this->t('E-Mail-Adresse'),
+      // Sichtbares Label entfernt (Wunsch), Titel bleibt für Screenreader
+      // erhalten und wird stattdessen als Platzhaltertext angezeigt.
+      '#title_display' => 'invisible',
+      '#attributes' => [
+        'placeholder' => $this->t('E-Mail-Adresse'),
+      ],
       '#required' => TRUE,
       '#default_value' => $this->currentUser->isAnonymous() ? '' : ($this->currentUser->getEmail() ?? ''),
     ];
@@ -88,6 +95,15 @@ final class SubscribeForm extends FormBase {
       '#type' => 'item',
       '#markup' => $this->t('Du erhältst eine E-Mail mit einem Bestätigungslink. Erst nach dem Klick darauf bist du angemeldet.'),
       '#weight' => 10,
+    ];
+
+    $form['privacy_consent'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Ich habe die <a href=":url" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und bin mit der Verarbeitung meiner Daten zum Zweck des Newsletter-Versands einverstanden.', [
+        ':url' => Url::fromUserInput('/datenschutz')->toString(),
+      ]),
+      '#required' => TRUE,
+      '#weight' => 15,
     ];
 
     $form['actions'] = ['#type' => 'actions'];
