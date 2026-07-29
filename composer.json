@@ -29,6 +29,7 @@
         "drupal/module_filter": "^5.0",
         "drupal/registration_role": "^2.0",
         "drupal/remove_username": "^1.5",
+        "drupal/symfony_mailer": "^2.0",
         "drupal/user_registrationpassword": "^2.0",
         "drush/drush": "^13.7"
     },

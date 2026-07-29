@@ -30,7 +30,7 @@ final class SubscribeForm extends FormBase {
     private readonly TokenManagerInterface $tokenManager,
     private readonly FloodInterface $flood,
     private readonly AccountProxyInterface $currentUser,
-    private readonly RequestStack $requestStack,
+    private readonly RequestStack $newsletterRequestStack,
   ) {}
 
   /**
@@ -66,11 +66,18 @@ final class SubscribeForm extends FormBase {
     // Honeypot: für Menschen unsichtbares Feld, das Formular-Bots häufig
     // trotzdem ausfüllen. Bleibt es leer, ist der Absender vermutlich kein
     // Bot.
+    // Inline statt nur per CSS-Klasse versteckt, damit das gesamte
+    // Form-Item (inkl. Label) unabhängig vom aktiven Theme (das
+    // core-Hilfsklassen wie .visually-hidden eventuell gar nicht lädt)
+    // zuverlässig unsichtbar bleibt.
     $form['website'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Website'),
+      '#wrapper_attributes' => [
+        'style' => 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;',
+        'aria-hidden' => 'true',
+      ],
       '#attributes' => [
-        'class' => ['visually-hidden'],
         'tabindex' => '-1',
         'autocomplete' => 'off',
       ],
@@ -97,7 +104,7 @@ final class SubscribeForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
-    $ip = $this->requestStack->getCurrentRequest()?->getClientIp() ?? '0.0.0.0';
+    $ip = $this->newsletterRequestStack->getCurrentRequest()?->getClientIp() ?? '0.0.0.0';
 
     if ((string) $form_state->getValue('website') !== '') {
       // Honeypot ausgefüllt: keinen Hinweis geben, einfach ohne Wirkung
@@ -115,7 +122,7 @@ final class SubscribeForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    $ip = $this->requestStack->getCurrentRequest()?->getClientIp() ?? '0.0.0.0';
+    $ip = $this->newsletterRequestStack->getCurrentRequest()?->getClientIp() ?? '0.0.0.0';
 
     if ($form_state->getValue('theater_newsletter_bot_detected')) {
       $this->messenger()->addStatus($this->genericConfirmationMessage());
