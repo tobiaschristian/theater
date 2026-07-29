@@ -25,3 +25,16 @@ theater_newsletter.unsubscribe:
     _access: 'TRUE'
     subscriber: '\d+'
     token: '[0-9a-f]{64}'
+
+theater_newsletter.admin_approve:
+  path: '/admin/theater-newsletter/abonnenten/{newsletter_subscriber}/freigeben'
+  defaults:
+    _form: '\Drupal\theater_newsletter\Form\SubscriberApproveForm'
+    _title: 'Anmeldung freigeben'
+  requirements:
+    _permission: 'administer theater_newsletter'
+    newsletter_subscriber: '\d+'
+  options:
+    parameters:
+      newsletter_subscriber:
+        type: entity:newsletter_subscriber

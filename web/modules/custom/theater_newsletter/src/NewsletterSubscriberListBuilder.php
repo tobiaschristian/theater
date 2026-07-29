@@ -6,6 +6,7 @@ namespace Drupal\theater_newsletter;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityListBuilder;
+use Drupal\Core\Url;
 use Drupal\theater_newsletter\Entity\NewsletterSubscriberInterface;
 
 /**
@@ -36,6 +37,27 @@ final class NewsletterSubscriberListBuilder extends EntityListBuilder {
       ? \Drupal::service('date.formatter')->format((int) $entity->get('created')->value, 'short')
       : '';
     return $row + parent::buildRow($entity);
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Ergänzt Edit/Delete (automatisch aus den Link-Templates der Entity)
+   * um einen "Freigeben"-Link für ausstehende Anmeldungen.
+   */
+  public function getOperations(EntityInterface $entity): array {
+    $operations = parent::getOperations($entity);
+
+    /** @var \Drupal\theater_newsletter\Entity\NewsletterSubscriberInterface $entity */
+    if ($entity->isPending() && $entity->access('update')) {
+      $operations['approve'] = [
+        'title' => $this->t('Freigeben'),
+        'weight' => -10,
+        'url' => Url::fromRoute('theater_newsletter.admin_approve', ['newsletter_subscriber' => $entity->id()]),
+      ];
+    }
+
+    return $operations;
   }
 
   /**

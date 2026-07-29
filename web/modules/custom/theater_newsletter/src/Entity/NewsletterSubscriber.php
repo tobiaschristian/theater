@@ -31,6 +31,10 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\AdminHtmlRouteProvider",
  *     },
+ *     "form" = {
+ *       "edit" = "Drupal\theater_newsletter\Form\SubscriberEditForm",
+ *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
+ *     },
  *   },
  *   base_table = "newsletter_subscriber",
  *   admin_permission = "administer theater_newsletter",
@@ -40,6 +44,8 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  *   },
  *   links = {
  *     "collection" = "/admin/theater-newsletter/abonnenten",
+ *     "edit-form" = "/admin/theater-newsletter/abonnenten/{newsletter_subscriber}/edit",
+ *     "delete-form" = "/admin/theater-newsletter/abonnenten/{newsletter_subscriber}/delete",
  *   },
  * )
  */
