@@ -91,12 +91,6 @@ final class SubscribeForm extends FormBase {
       '#required' => FALSE,
     ];
 
-    $form['hinweis'] = [
-      '#type' => 'item',
-      '#markup' => $this->t('Du erhältst eine E-Mail mit einem Bestätigungslink. Erst nach dem Klick darauf bist du angemeldet.'),
-      '#weight' => 10,
-    ];
-
     $form['privacy_consent'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Ich habe die <a href=":url" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen und bin mit der Verarbeitung meiner Daten zum Zweck des Newsletter-Versands einverstanden.', [
@@ -155,10 +149,12 @@ final class SubscribeForm extends FormBase {
 
   /**
    * Immer identische Erfolgsmeldung, unabhängig vom internen Zustand
-   * (verhindert E-Mail-Enumeration über das öffentliche Formular).
+   * (verhindert E-Mail-Enumeration über das öffentliche Formular). Enthält
+   * auch den Hinweis auf den Double-Opt-in, der vorher permanent im
+   * Formular stand und jetzt erst nach dem Absenden angezeigt wird.
    */
   private function genericConfirmationMessage(): \Stringable {
-    return $this->t('Falls diese E-Mail-Adresse noch nicht für den Newsletter angemeldet ist, erhältst du in Kürze eine Bestätigungsmail.');
+    return $this->t('Falls diese E-Mail-Adresse noch nicht für den Newsletter angemeldet ist, erhältst du in Kürze eine Bestätigungsmail. Erst nach dem Klick auf den Link darin bist du angemeldet.');
   }
 
 }
