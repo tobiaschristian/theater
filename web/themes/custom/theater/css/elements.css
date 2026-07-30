@@ -105,7 +105,7 @@ input[type="date"]::-webkit-clear-button {
 }
 
 /* Removes the spin button */
-input[type="date"]::-webkit-inner-spin-button { 
+input[type="date"]::-webkit-inner-spin-button {
 		display: none;
 }
 
@@ -148,7 +148,7 @@ input[type="date"], focus {
 
 /* PLZ Ort */
 
-.theater-membership-location { 
+.theater-membership-location {
 	display: flex;
 	gap: 15px;
 }
@@ -156,7 +156,7 @@ input[type="date"], focus {
 /* Toogle Checkbox*/
 input[type="checkbox"] {
 	position: relative;
-	width: 40px;
+	min-width: 40px;
 	height: 25px;
 	-webkit-appearance: none;
 	background: #be4932;
