@@ -78,6 +78,16 @@ function theater_newsletter_form_user_form_alter(array &$form, FormStateInterfac
     return;
   }
 
+  if ($account->id() === NULL) {
+    // getBaseFormId() für die 'user'-Entity ist "user_form" ohne Bundle,
+    // daher feuert dieser Hook auch beim Registrierungsformular (eigenes
+    // wie Admin-"Benutzer hinzufügen") – dort existiert das Konto noch
+    // nicht, isAnonymous() greift wegen strikter ===0-Prüfung hier nicht.
+    // Für ein noch nicht gespeichertes Konto gibt es naturgemäß noch kein
+    // verknüpfbares Newsletter-Abo.
+    return;
+  }
+
   $current_user = \Drupal::currentUser();
   if ((int) $current_user->id() !== (int) $account->id() && !$current_user->hasPermission('administer users')) {
     return;

@@ -156,7 +156,11 @@ final class TokenManager implements TokenManagerInterface {
    * {@inheritdoc}
    */
   public function getSubscriberForAccount(UserInterface $account): ?NewsletterSubscriberInterface {
-    if ($account->isAnonymous()) {
+    if ($account->isAnonymous() || $account->id() === NULL) {
+      // isAnonymous() prüft strikt auf id() === 0/'0' und lässt ein noch
+      // nicht gespeichertes Konto (id() === NULL, z. B. während der
+      // Registrierung) durch – für so ein Konto kann es aber naturgemäß
+      // noch keinen verknüpften Abonnenten geben.
       return NULL;
     }
 
