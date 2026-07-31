@@ -10,8 +10,12 @@ entity_type: node
 type: list_string
 settings:
   allowed_values:
-    mitglied: Mitglied
-    foerdermitglied: Fördermitglied
+    -
+      value: mitglied
+      label: Mitglied
+    -
+      value: foerdermitglied
+      label: Fördermitglied
   allowed_values_function: ''
 module: options
 locked: false
