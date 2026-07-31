@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_mitgliedsnummer
+    - node.type.mitglied
+id: node.mitglied.field_mitgliedsnummer
+field_name: field_mitgliedsnummer
+entity_type: node
+bundle: mitglied
+label: Mitgliedsnummer
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

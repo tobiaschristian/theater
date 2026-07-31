@@ -1,0 +1,10 @@
+services:
+  logger.channel.theater_members:
+    parent: logger.channel_base
+    arguments: ['theater_members']
+
+  theater_members.birthday_reminder:
+    class: Drupal\theater_members\BirthdayReminder
+    arguments: ['@entity_type.manager', '@datetime.time', '@config.factory', '@Drupal\symfony_mailer\MailerPlusInterface', '@state', '@logger.channel.theater_members']
+
+  Drupal\theater_members\BirthdayReminderInterface: '@theater_members.birthday_reminder'

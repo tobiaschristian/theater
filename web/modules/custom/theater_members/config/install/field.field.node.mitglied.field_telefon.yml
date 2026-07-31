@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_telefon
+    - node.type.mitglied
+  module:
+    - telephone
+id: node.mitglied.field_telefon
+field_name: field_telefon
+entity_type: node
+bundle: mitglied
+label: Telefon
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: telephone

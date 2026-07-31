@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_notizen
+    - node.type.mitglied
+  module:
+    - text
+id: node.mitglied.field_notizen
+field_name: field_notizen
+entity_type: node
+bundle: mitglied
+label: Notizen
+description: 'Internes Freitextfeld.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long

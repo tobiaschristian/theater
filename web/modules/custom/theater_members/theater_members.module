@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function theater_members_theme(): array {
+  return [
+    'theater_members_birthday_mail' => [
+      'variables' => [
+        'heading' => NULL,
+        'intro' => NULL,
+        'members' => [],
+        'outro' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Prüft täglich, ob Geburtstags-Reminder fällig sind (State-API-Sperre
+ * verhindert Mehrfachversand bei mehreren Cron-Läufen am selben Tag, siehe
+ * BirthdayReminder::sendDueReminders()).
+ */
+function theater_members_cron(): void {
+  \Drupal::service('theater_members.birthday_reminder')->sendDueReminders();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node.
+ *
+ * Der Titel eines Mitglied-Node wird automatisch aus Vor-/Nachname gebildet
+ * (siehe core.entity_form_display.node.mitglied.default.yml, wo das
+ * Titelfeld ausgeblendet ist) statt ihn doppelt pflegen zu lassen.
+ */
+function theater_members_node_presave(NodeInterface $node): void {
+  if ($node->bundle() !== 'mitglied') {
+    return;
+  }
+
+  $vorname = (string) $node->get('field_vorname')->value;
+  $nachname = (string) $node->get('field_nachname')->value;
+  $node->setTitle(trim("$vorname $nachname") ?: t('Unbenanntes Mitglied'));
+}

@@ -1,0 +1,13 @@
+name: Theater Members
+type: module
+description: 'Eigenständige Mitgliederkartei (Node-basiert) mit Geburtstags-Reminder.'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:node
+  - drupal:user
+  - drupal:datetime
+  - drupal:telephone
+  - drupal:text
+  - drupal:options
+  - symfony_mailer:symfony_mailer

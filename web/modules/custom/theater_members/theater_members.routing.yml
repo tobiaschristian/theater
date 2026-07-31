@@ -1,0 +1,7 @@
+theater_members.settings:
+  path: '/admin/theater-members/einstellungen'
+  defaults:
+    _form: '\Drupal\theater_members\Form\MembersSettingsForm'
+    _title: 'Mitgliederverwaltung: Einstellungen'
+  requirements:
+    _permission: 'administer theater_members'

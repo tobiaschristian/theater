@@ -1,0 +1,4 @@
+administer theater_members:
+  title: 'Mitgliederverwaltung konfigurieren'
+  description: 'Empfängerliste für den Geburtstags-Reminder verwalten.'
+  restrict access: true

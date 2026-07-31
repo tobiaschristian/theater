@@ -1,0 +1,5 @@
+theater_members.settings:
+  title: 'Mitgliederverwaltung'
+  description: 'Empfängerliste für den Geburtstags-Reminder verwalten.'
+  route_name: theater_members.settings
+  parent: system.admin_config

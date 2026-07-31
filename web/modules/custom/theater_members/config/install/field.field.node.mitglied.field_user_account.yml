@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_user_account
+    - node.type.mitglied
+id: node.mitglied.field_user_account
+field_name: field_user_account
+entity_type: node
+bundle: mitglied
+label: Verknüpftes Benutzerkonto
+description: 'Optional: bestehendes Konto dieses Mitglieds.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: default
+  handler_settings: {  }
+field_type: entity_reference
