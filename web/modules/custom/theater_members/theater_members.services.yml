@@ -8,3 +8,9 @@ services:
     arguments: ['@entity_type.manager', '@datetime.time', '@config.factory', '@Drupal\symfony_mailer\MailerPlusInterface', '@state', '@logger.channel.theater_members']
 
   Drupal\theater_members\BirthdayReminderInterface: '@theater_members.birthday_reminder'
+
+  theater_members.member_lookup:
+    class: Drupal\theater_members\MemberLookup
+    arguments: ['@entity_type.manager', '@datetime.time']
+
+  Drupal\theater_members\MemberLookupInterface: '@theater_members.member_lookup'

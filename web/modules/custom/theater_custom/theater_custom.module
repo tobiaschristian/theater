@@ -63,10 +63,10 @@ function theater_custom_alter_user_register_form(array &$form, FormStateInterfac
   $form['field_adresse']['widget'][0]['value']['#attributes']['placeholder'] = 'Straße, Hausnummer';
   $form['field_plz']['widget'][0]['value']['#attributes']['placeholder'] = 'PLZ';
   $form['field_ort']['widget'][0]['value']['#attributes']['placeholder'] = 'Ort';
-  $form['field_inhaber']['widget'][0]['value']['#attributes']['placeholder'] = 'Kontoinhaber';
+  $form['field_inhaber']['#attributes']['placeholder'] = 'Kontoinhaber';
   $form['field_vorname']['widget'][0]['value']['#title_display'] = FALSE;
   $form['field_nachname']['widget'][0]['value']['#title_display'] = FALSE;
-  $form['field_inhaber']['widget'][0]['value']['#title_display'] = FALSE;
+  $form['field_inhaber']['#title_display'] = FALSE;
   $form['field_ort']['widget'][0]['value']['#title_display'] = FALSE;
   $form['field_adresse']['widget'][0]['value']['#title_display'] = FALSE;
   $form['field_plz']['widget'][0]['value']['#title_display'] = FALSE;

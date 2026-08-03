@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Ergänzt field_iban, field_inhaber, field_mandate_reference am
+ * Mitglied-Node-Typ.
+ *
+ * Diese drei Felder zogen von den gleichnamigen User-Feldern hierher um
+ * (siehe theater_membership_update_10001()); field_geburtsdatum existiert
+ * am Mitglied-Typ bereits identisch und wird einfach mitbenutzt.
+ */
+function theater_members_update_10001(): string {
+  $fields = [
+    'field_iban' => [
+      'label' => 'IBAN',
+      'weight_form' => 14,
+      'weight_view' => 14,
+    ],
+    'field_inhaber' => [
+      'label' => 'Kontoinhaber',
+      'weight_form' => 15,
+      'weight_view' => 15,
+    ],
+    'field_mandate_reference' => [
+      'label' => 'Mandatsreferenz',
+      'weight_form' => 16,
+      'weight_view' => 16,
+    ],
+  ];
+
+  foreach ($fields as $field_name => $info) {
+    if (!FieldStorageConfig::loadByName('node', $field_name)) {
+      FieldStorageConfig::create([
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'type' => 'string',
+        'settings' => [
+          'max_length' => 255,
+          'is_ascii' => FALSE,
+          'case_sensitive' => FALSE,
+        ],
+        'cardinality' => 1,
+        'translatable' => TRUE,
+      ])->save();
+    }
+
+    if (!FieldConfig::loadByName('node', 'mitglied', $field_name)) {
+      FieldConfig::create([
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'bundle' => 'mitglied',
+        'label' => $info['label'],
+        'required' => FALSE,
+        'translatable' => TRUE,
+      ])->save();
+    }
+  }
+
+  $form_display = \Drupal::service('entity_display.repository')->getFormDisplay('node', 'mitglied', 'default');
+  foreach ($fields as $field_name => $info) {
+    $form_display->setComponent($field_name, [
+      'type' => 'string_textfield',
+      'weight' => $info['weight_form'],
+      'settings' => ['size' => 60, 'placeholder' => ''],
+    ]);
+  }
+  $form_display->save();
+
+  $view_display = \Drupal::service('entity_display.repository')->getViewDisplay('node', 'mitglied', 'default');
+  foreach ($fields as $field_name => $info) {
+    $view_display->setComponent($field_name, [
+      'type' => 'string',
+      'label' => 'above',
+      'settings' => ['link_to_entity' => FALSE],
+      'weight' => $info['weight_view'],
+    ]);
+  }
+  $view_display->save();
+
+  return 'Felder field_iban, field_inhaber, field_mandate_reference am Mitglied-Typ angelegt.';
+}

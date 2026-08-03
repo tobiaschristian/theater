@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\user\Entity\Role;
 
 /**
@@ -19,4 +21,38 @@ function theater_membership_install(): void {
       ])->save();
     }
   }
+}
+
+/**
+ * Entfernt field_iban, field_inhaber, field_mandate_reference,
+ * field_geburtsdatum vom Benutzerkonto.
+ *
+ * Diese vier Felder ziehen auf den Mitglied-Node-Typ um (siehe
+ * theater_members_update_10001() für die drei neuen Felder dort;
+ * field_geburtsdatum existiert dort bereits identisch). Es waren noch
+ * keine echten Daten in diesen User-Feldern (nur Testdaten) – daher ohne
+ * vorherige Migration.
+ */
+function theater_membership_update_10001(): string {
+  $field_names = ['field_iban', 'field_inhaber', 'field_mandate_reference', 'field_geburtsdatum'];
+  $deleted = [];
+
+  foreach ($field_names as $field_name) {
+    $field_config = FieldConfig::loadByName('user', 'user', $field_name);
+    if ($field_config) {
+      $field_config->delete();
+      $deleted[] = $field_name;
+    }
+  }
+
+  foreach ($field_names as $field_name) {
+    $storage = FieldStorageConfig::loadByName('user', $field_name);
+    $storage?->delete();
+  }
+
+  field_purge_batch(50);
+
+  return $deleted
+    ? 'Vom Benutzerkonto entfernt: ' . implode(', ', $deleted) . '.'
+    : 'Keine der vier Felder war noch am Benutzerkonto vorhanden.';
 }

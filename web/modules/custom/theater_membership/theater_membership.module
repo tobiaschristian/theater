@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\node\NodeInterface;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 
@@ -21,14 +22,28 @@ function theater_membership_form_user_form_alter(array &$form, FormStateInterfac
     return;
   }
 
+  if ($account->id() === NULL) {
+    // getBaseFormId() für die 'user'-Entity ist "user_form" ohne Bundle,
+    // daher feuert dieser Hook auch beim Registrierungsformular
+    // (isAnonymous() greift wegen strikter ===0-Prüfung hier nicht, siehe
+    // gleiches Problem/Fix in theater_newsletter). Die Registrierung wird
+    // komplett von theater_membership_form_user_register_form_alter()
+    // abgedeckt; würde dieser Hook hier trotzdem weiterlaufen, entstünde
+    // ein zweites, eigenständiges Geburtsdatum-/Kontoinhaber-Feld.
+    return;
+  }
+
   if (!theater_membership_user_can_manage_membership(\Drupal::currentUser(), $account)) {
     return;
   }
 
   $membership = theater_membership_load_membership((int) $account->id());
   $membership_type = $membership['membership_type'] ?? theater_membership_get_current_membership_type($account);
-  $iban = theater_membership_get_user_field_value($account, 'field_iban');
-  $mandate_reference = theater_membership_get_user_field_value($account, 'field_mandate_reference');
+  $iban = $membership['iban'] ?? '';
+  $mandate_reference = $membership['mandate_reference'] ?? '';
+  $member = \Drupal::service('theater_members.member_lookup')->findByUserId((int) $account->id());
+  $geburtsdatum = theater_membership_get_node_field_value($member, 'field_geburtsdatum');
+  $inhaber = theater_membership_get_node_field_value($member, 'field_inhaber');
 
   $form['theater_membership'] = [
     '#type' => 'container',
@@ -108,28 +123,48 @@ function theater_membership_form_user_form_alter(array &$form, FormStateInterfac
     ];
   }
 
-  foreach (['field_geburtsdatum', 'field_adresse', 'field_ort', 'field_plz', 'field_inhaber'] as $field_name) {
+  // field_geburtsdatum/field_inhaber sind keine Felder mehr am Benutzer-
+  // konto (siehe theater_membership_update_10001()), sondern leben jetzt
+  // auf dem verknüpften Mitglied-Node – deshalb hier als eigene Elemente
+  // gebaut statt aus einem vorhandenen Field-API-Widget verschoben (Muster
+  // wie "theater_membership_iban" oben).
+  $foerdermitglied_states = [
+    'visible' => [
+      ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+    ],
+    'required' => [
+      ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
+    ],
+  ];
+
+  $form['theater_membership_container']['field_geburtsdatum'] = [
+    '#type' => 'date',
+    '#title' => t('Geburtsdatum'),
+    '#default_value' => $geburtsdatum,
+    '#weight' => 10,
+    '#states' => $foerdermitglied_states,
+  ];
+
+  $form['theater_membership_container']['field_inhaber'] = [
+    '#type' => 'textfield',
+    '#title' => t('Kontoinhaber'),
+    '#default_value' => $inhaber,
+    '#maxlength' => 255,
+    '#weight' => 20,
+    '#states' => $foerdermitglied_states,
+  ];
+
+  foreach (['field_adresse', 'field_ort', 'field_plz'] as $field_name) {
     if (!isset($form[$field_name])) {
       continue;
     }
 
-    $form[$field_name]['#states'] = [
-      'visible' => [
-        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
-      ],
-      'required' => [
-        ':input[name="theater_membership_type"]' => ['value' => 'foerdermitglied'],
-      ],
-    ];
+    $form[$field_name]['#states'] = $foerdermitglied_states;
   }
 
-  foreach (['field_geburtsdatum', 'field_adresse', 'field_inhaber'] as $field_name) {
-    if (!isset($form[$field_name])) {
-      continue;
-    }
-
-    $form['theater_membership_container'][$field_name] = $form[$field_name];
-    unset($form[$field_name]);
+  if (isset($form['field_adresse'])) {
+    $form['theater_membership_container']['field_adresse'] = $form['field_adresse'];
+    unset($form['field_adresse']);
   }
 
   if (isset($form['field_plz'], $form['field_ort'])) {
@@ -164,12 +199,31 @@ function theater_membership_form_user_form_alter(array &$form, FormStateInterfac
  * Implements hook_form_FORM_ID_alter() for user_register_form.
  */
 function theater_membership_form_user_register_form_alter(array &$form, FormStateInterface $form_state): void {
-  foreach (['field_iban', 'field_mandate_reference'] as $field_name) {
-    if (isset($form[$field_name])) {
-      $form[$field_name]['#access'] = FALSE;
-    }
-  }
-  
+  // field_iban/field_mandate_reference bleiben bei der Registrierung
+  // weiterhin unsichtbar (erst später als Fördermitglied in den
+  // Kontoeinstellungen pflegbar) – sie existieren jetzt aber gar nicht
+  // mehr als Feld hier, es gibt also nichts mehr zu verstecken.
+  // field_geburtsdatum/field_inhaber sind keine Felder mehr am
+  // Benutzerkonto (siehe theater_membership_update_10001()), werden aber
+  // weiterhin bei der Registrierung abgefragt – jetzt als eigene
+  // Formularelemente statt Field-API-Widgets.
+  // Mit vorhandenem Array mergen statt zu überschreiben: theater_custom
+  // setzt auf diesem Formular ebenfalls #attributes/#title_display für
+  // field_inhaber, unabhängig davon, in welcher Reihenfolge die
+  // hook_form_alter()-Implementierungen beider Module laufen.
+  $form['field_geburtsdatum'] = [
+    '#type' => 'date',
+    '#title' => t('Geburtsdatum'),
+    '#weight' => 10,
+  ] + ($form['field_geburtsdatum'] ?? []);
+
+  $form['field_inhaber'] = [
+    '#type' => 'textfield',
+    '#title' => t('Kontoinhaber'),
+    '#maxlength' => 255,
+    '#weight' => 11,
+  ] + ($form['field_inhaber'] ?? []);
+
   /*
   $form['theater_membership_hint'] = [
     '#type' => 'item',
@@ -178,7 +232,39 @@ function theater_membership_form_user_register_form_alter(array &$form, FormStat
   ];
   */
 
-  $form['#validate'][] = 'theater_membership_form_user_register_form_validate';
+  $form['actions']['submit']['#submit'][] = 'theater_membership_register_form_submit';
+}
+
+/**
+ * Legt nach der Registrierung einen verknüpften Mitglied-Node an bzw.
+ * verknüpft einen bestehenden per E-Mail-Abgleich (siehe
+ * MemberLookup::getOrCreateForAccount()) und übernimmt Geburtsdatum/
+ * Kontoinhaber vom Registrierungsformular.
+ */
+function theater_membership_register_form_submit(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $account = $form_object->getEntity();
+  if (!$account instanceof UserInterface || !$account->id()) {
+    return;
+  }
+
+  $member = \Drupal::service('theater_members.member_lookup')->getOrCreateForAccount($account);
+
+  $geburtsdatum = (string) $form_state->getValue('field_geburtsdatum', '');
+  if ($geburtsdatum !== '') {
+    $member->set('field_geburtsdatum', $geburtsdatum);
+  }
+
+  $inhaber = trim((string) $form_state->getValue('field_inhaber', ''));
+  if ($inhaber !== '') {
+    $member->set('field_inhaber', $inhaber);
+  }
+
+  $member->save();
 }
 
 /**
@@ -226,17 +312,6 @@ function theater_membership_iban_ajax_callback(array &$form, FormStateInterface 
 }
 
 /**
- * Ensures hidden membership fields stay empty during registration.
- */
-function theater_membership_form_user_register_form_validate(array &$form, FormStateInterface $form_state): void {
-  foreach (['field_iban', 'field_mandate_reference'] as $field_name) {
-    if ($form_state->hasValue($field_name)) {
-      $form_state->setValue($field_name, []);
-    }
-  }
-}
-
-/**
  * Persists membership data and synchronizes roles.
  */
 function theater_membership_user_form_submit(array &$form, FormStateInterface $form_state): void {
@@ -252,8 +327,12 @@ function theater_membership_user_form_submit(array &$form, FormStateInterface $f
 
   $membership_type = (string) $form_state->getValue('theater_membership_type', 'mitglied');
   $iban = (string) $form_state->getValue('theater_membership_iban', '');
-  $existing_iban = theater_membership_get_user_field_value($account, 'field_iban');
-  $mandate_reference = theater_membership_get_user_field_value($account, 'field_mandate_reference');
+  $geburtsdatum = (string) $form_state->getValue('field_geburtsdatum', '');
+  $inhaber = trim((string) $form_state->getValue('field_inhaber', ''));
+
+  $member = \Drupal::service('theater_members.member_lookup')->getOrCreateForAccount($account);
+  $existing_iban = theater_membership_get_node_field_value($member, 'field_iban');
+  $mandate_reference = theater_membership_get_node_field_value($member, 'field_mandate_reference');
 
   theater_membership_sync_roles($account, $membership_type);
 
@@ -267,8 +346,15 @@ function theater_membership_user_form_submit(array &$form, FormStateInterface $f
     $mandate_reference = '';
   }
 
-  theater_membership_set_user_field_value($account, 'field_iban', $iban);
-  theater_membership_set_user_field_value($account, 'field_mandate_reference', $mandate_reference);
+  $member->set('field_iban', $iban);
+  $member->set('field_mandate_reference', $mandate_reference);
+  if ($geburtsdatum !== '') {
+    $member->set('field_geburtsdatum', $geburtsdatum);
+  }
+  if ($inhaber !== '') {
+    $member->set('field_inhaber', $inhaber);
+  }
+  $member->save();
 }
 
 /**
@@ -285,7 +371,8 @@ function theater_membership_user_presave(UserInterface $account): void {
 }
 
 /**
- * Loads effective membership data from the user entity.
+ * Loads effective membership data (Rolle vom User, IBAN/Mandatsreferenz
+ * vom verknüpften Mitglied-Node).
  */
 function theater_membership_load_membership(int $uid): array {
   $account = User::load($uid);
@@ -293,10 +380,12 @@ function theater_membership_load_membership(int $uid): array {
     return [];
   }
 
+  $member = \Drupal::service('theater_members.member_lookup')->findByUserId($uid);
+
   return [
     'membership_type' => theater_membership_get_current_membership_type($account),
-    'iban' => theater_membership_get_user_field_value($account, 'field_iban'),
-    'mandate_reference' => theater_membership_get_user_field_value($account, 'field_mandate_reference'),
+    'iban' => theater_membership_get_node_field_value($member, 'field_iban'),
+    'mandate_reference' => theater_membership_get_node_field_value($member, 'field_mandate_reference'),
   ];
 }
 
@@ -388,23 +477,12 @@ function theater_membership_build_iban_feedback_markup(string $membership_type, 
 }
 
 /**
- * Returns a simple text field value from the user entity.
+ * Returns a simple field value from a (possibly missing) Mitglied-Node.
  */
-function theater_membership_get_user_field_value(UserInterface $account, string $field_name): string {
-  if (!$account->hasField($field_name) || $account->get($field_name)->isEmpty()) {
+function theater_membership_get_node_field_value(?NodeInterface $node, string $field_name): string {
+  if (!$node instanceof NodeInterface || !$node->hasField($field_name) || $node->get($field_name)->isEmpty()) {
     return '';
   }
 
-  return (string) $account->get($field_name)->value;
-}
-
-/**
- * Sets a simple text field value on the user entity.
- */
-function theater_membership_set_user_field_value(UserInterface $account, string $field_name, string $value): void {
-  if (!$account->hasField($field_name)) {
-    return;
-  }
-
-  $account->set($field_name, $value);
+  return (string) $node->get($field_name)->value;
 }
